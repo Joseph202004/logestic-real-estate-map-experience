@@ -7,36 +7,38 @@ import {
   ArrowUpRight, ChevronRight
 } from 'lucide-react';
 import type { Property } from '../data/properties';
-import { getStatusLabel, getEssentialsList } from '../data/properties';
+import { getStatusLabel } from '../data/properties';
+import type { LayerId, Persona } from '../personas/personas';
+import { defaultPersona } from '../personas/personas';
+import { AnalysisToolbar, LayerPanel, MatchPanel, REACH_OPTIONS } from './map/overlays';
+import type { ReachId } from './map/overlays';
+import { useApp } from '../context/AppContext';
 
 const FONT = 'Montserrat, sans-serif';
 
-/* ─── Custom SVG Marker Icons ─── */
-function createMarkerIcon(color: string, isActive: boolean = false): L.DivIcon {
-  const size = isActive ? 28 : 16;
-  const border = isActive ? 4 : 3;
-  const glow = isActive ? `<div style="position:absolute;top:-10px;left:-10px;width:${size + 20}px;height:${size + 20}px;border-radius:50%;background:${color}22;animation:mapPulse 2s ease-in-out infinite;"></div>` : '';
+/* ─── Price pill markers ─── */
+function createPriceIcon(property: Property, isActive: boolean, isSaved = false): L.DivIcon {
+  const label = property.rentPsf ? `$${property.rentPsf}/SF` : 'Ask';
+  const width = label.length * 7.5 + 22;
 
   return L.divIcon({
-    className: 'custom-marker',
+    className: 'price-marker',
     html: `
-      <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-        ${glow}
-        <div style="
-          width:${size}px;height:${size}px;border-radius:50%;
-          background:${color};
-          border:${border}px solid white;
-          box-shadow:0 2px 8px ${color}66${isActive ? ',0 0 20px ' + color + '44' : ''};
-          transition:all 0.2s;
-          cursor:pointer;
-          position:relative;
-          z-index:2;
-        "></div>
-      </div>
+      <div style="
+        display:flex;align-items:center;justify-content:center;
+        height:28px;padding:0 11px;border-radius:999px;
+        background:${isActive ? '#0C2B45' : '#ffffff'};
+        color:${isActive ? '#ffffff' : '#0C447C'};
+        border:1px solid ${isActive ? '#0C2B45' : 'rgba(12,68,124,0.12)'};
+        box-shadow:0 2px 6px rgba(12,68,124,0.22);
+        font-family:${FONT};font-size:12px;font-weight:800;white-space:nowrap;
+        transition:transform .15s ease;
+        transform:${isActive ? 'scale(1.06)' : 'scale(1)'};
+      ">${isSaved ? '&#9829; ' : ''}${label}</div>
     `,
-    iconSize: [isActive ? 48 : 24, isActive ? 48 : 24],
-    iconAnchor: [isActive ? 24 : 12, isActive ? 24 : 12],
-    popupAnchor: [0, isActive ? -24 : -12],
+    iconSize: [width, 28],
+    iconAnchor: [width / 2, 14],
+    popupAnchor: [0, -18],
   });
 }
 
@@ -97,36 +99,95 @@ const HIGHWAY_ROUTES = [
   { name: 'I-70', points: [[39.77, -104.87], [39.1, -99.3], [39.0, -94.6], [38.9, -90.2], [39.8, -86.2]] as [number, number][] },
 ];
 
-/* ─── Map bounds / auto-fit component ─── */
-function MapFitter({ properties: visibleProperties, selectedId }: { properties: Property[]; selectedId: string | null }) {
+/**
+ * Leaflet projects against the container's pixel size, so any camera move made
+ * while that size is 0 (e.g. during a flex-layout shift) yields NaN LatLngs.
+ * This waits until the container reports a real size before reporting ready,
+ * re-checking on resize and nudging Leaflet with invalidateSize.
+ */
+function useMapReady() {
   const map = useMap();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      const size = map.getSize();
+      if (size.x > 0 && size.y > 0) {
+        setReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    map.invalidateSize();
+    if (check()) return;
+
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize();
+      check();
+    });
+    ro.observe(map.getContainer());
+    return () => ro.disconnect();
+  }, [map]);
+
+  return ready;
+}
+
+/* ─── Map bounds / auto-fit component ─── */
+function MapFitter({ properties: visibleProperties }: { properties: Property[]; selectedId: string | null }) {
+  const map = useMap();
+  const ready = useMapReady();
   const prevPropsRef = useRef<string>('');
 
   useEffect(() => {
+    if (!ready || visibleProperties.length === 0) return;
     const key = visibleProperties.map(p => p.id).sort().join(',');
-    if (key === prevPropsRef.current || visibleProperties.length === 0) return;
+    if (key === prevPropsRef.current) return;
     prevPropsRef.current = key;
 
     const bounds = L.latLngBounds(visibleProperties.map(p => [p.map.lat, p.map.lng]));
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 8, animate: true, duration: 0.5 });
-  }, [visibleProperties, map]);
+  }, [visibleProperties, map, ready]);
 
   return null;
+}
+
+/**
+ * A labor zone or transit hub within this many degrees of the selected property
+ * belongs to its metro, so it is drawn on the property itself — otherwise the
+ * ring sits a few miles off the marker it is meant to describe.
+ */
+const SAME_METRO_DEG = 0.6;
+
+function snapToSelected(
+  lat: number,
+  lng: number,
+  selected: Property | undefined
+): [number, number] {
+  if (
+    selected &&
+    Math.abs(lat - selected.map.lat) < SAME_METRO_DEG &&
+    Math.abs(lng - selected.map.lng) < SAME_METRO_DEG
+  ) {
+    return [selected.map.lat, selected.map.lng];
+  }
+  return [lat, lng];
 }
 
 /* ─── Fly-to selected property ─── */
 function FlyToSelected({ property }: { property: Property | undefined }) {
   const map = useMap();
+  const ready = useMapReady();
   const prevIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!property || property.id === prevIdRef.current) return;
+    if (!ready || !property || property.id === prevIdRef.current) return;
     if (!property.map || isNaN(property.map.lat) || isNaN(property.map.lng)) return;
     prevIdRef.current = property.id;
     const currentZoom = map.getZoom();
     const zoom = isNaN(currentZoom) ? 7 : Math.max(currentZoom, 7);
     map.flyTo([property.map.lat, property.map.lng], zoom, { animate: true, duration: 0.6 });
-  }, [property, map]);
+  }, [property, map, ready]);
 
   return null;
 }
@@ -139,20 +200,45 @@ export function InteractiveMap({
   properties: visibleProperties,
   selectedId,
   onSelectProperty,
+  showControls = true,
+  persona = defaultPersona,
 }: {
   properties: Property[];
   selectedId: string | null;
   onSelectProperty: (id: string) => void;
+  /** false renders the bare map — no toolbar, layer panel, legend or match panel. */
+  showControls?: boolean;
+  /** Drives which layers are recommended and how the match is explained. */
+  persona?: Persona;
 }) {
   const navigate = useNavigate();
-  const [overlays, setOverlays] = useState({
-    labor: false,
-    highway: true,
-    transit: false,
-  });
+  const { toggleCompare, toggleSaved, isInCompare, isSaved } = useApp();
+  const [reach, setReach] = useState<ReachId>('1h');
 
-  const toggle = useCallback((key: keyof typeof overlays) =>
-    setOverlays(prev => ({ ...prev, [key]: !prev[key] })), []);
+  // Persona presets pick the layers; manual choices hold until the persona changes.
+  const [active, setActive] = useState<Set<LayerId>>(() => new Set(persona.recommended));
+  const personaRef = useRef(persona.id);
+  useEffect(() => {
+    if (personaRef.current !== persona.id) {
+      personaRef.current = persona.id;
+      setActive(new Set(persona.recommended));
+    }
+  }, [persona]);
+
+  const toggleLayer = useCallback((id: LayerId) =>
+    setActive(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    }), []);
+
+  const overlays = {
+    labor: active.has('labor'),
+    highway: active.has('highway'),
+    transit: active.has('transit'),
+    reach: active.has('reach'),
+  };
+  const reachOption = REACH_OPTIONS.find(r => r.id === reach)!;
 
   const selectedProperty = visibleProperties.find(p => p.id === selectedId);
 
@@ -165,7 +251,17 @@ export function InteractiveMap({
   }, []);
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden border border-[#E6F1FB] shadow-inner" style={{ fontFamily: FONT }}>
+    // Grid: map card top-left, Data Layers right column, match bar along the bottom.
+    <div
+      className="w-full h-full grid gap-3"
+      style={{
+        fontFamily: FONT,
+        gridTemplateColumns: showControls ? 'minmax(0,1fr) 236px' : '1fr',
+        gridTemplateRows: showControls && selectedProperty ? 'minmax(0,1fr) auto' : 'minmax(0,1fr)',
+      }}
+    >
+      {/* Map card. `isolate z-0` keeps Leaflet's panes in their own stacking context. */}
+      <div className="relative isolate z-0 min-h-0 min-w-0 rounded-2xl overflow-hidden border border-[#E6F1FB] shadow-inner">
       <MapContainer
         center={center}
         zoom={5}
@@ -206,7 +302,7 @@ export function InteractiveMap({
         {overlays.labor && LABOR_ZONES.map((zone, i) => (
           <Circle
             key={`labor-${i}`}
-            center={[zone.lat, zone.lng]}
+            center={snapToSelected(zone.lat, zone.lng, selectedProperty)}
             radius={zone.score * 800}
             pathOptions={{
               color: '#00C2B2',
@@ -230,7 +326,7 @@ export function InteractiveMap({
         {overlays.transit && TRANSIT_HUBS.map((hub, i) => (
           <CircleMarker
             key={`transit-${i}`}
-            center={[hub.lat, hub.lng]}
+            center={snapToSelected(hub.lat, hub.lng, selectedProperty)}
             radius={7}
             pathOptions={{
               color: '#0C447C',
@@ -251,30 +347,23 @@ export function InteractiveMap({
           </CircleMarker>
         ))}
 
-        {/* ─── 1-Hour Delivery Radius for selected property ─── */}
-        {selectedProperty && (
+        {/* ─── Delivery reach for the selected property (spec §7.1) ─── */}
+        {overlays.reach && selectedProperty && (
           <>
             <Circle
               center={[selectedProperty.map.lat, selectedProperty.map.lng]}
-              radius={80000}
+              radius={reachOption.radiusKm * 1000}
               pathOptions={{
-                color: '#00C2B2',
-                fillColor: '#00C2B2',
-                fillOpacity: 0.06,
-                weight: 2,
-                dashArray: '8 4',
-                opacity: 0.5,
+                color: '#00C2B2', fillColor: '#00C2B2', fillOpacity: 0.06,
+                weight: 2, dashArray: '8 4', opacity: 0.5,
               }}
             />
             <Circle
               center={[selectedProperty.map.lat, selectedProperty.map.lng]}
-              radius={50000}
+              radius={reachOption.radiusKm * 620}
               pathOptions={{
-                color: '#00C2B2',
-                fillColor: '#00C2B2',
-                fillOpacity: 0.04,
-                weight: 1,
-                opacity: 0.3,
+                color: '#00C2B2', fillColor: '#00C2B2', fillOpacity: 0.04,
+                weight: 1, opacity: 0.3,
               }}
             />
           </>
@@ -283,8 +372,7 @@ export function InteractiveMap({
         {/* ─── Property markers ─── */}
         {visibleProperties.map(p => {
           const isActive = p.id === selectedId;
-          const color = isActive ? ACTIVE_COLOR : STATUS_COLORS[p.availabilityStatus] || '#0C447C';
-          const icon = createMarkerIcon(color, isActive);
+          const icon = createPriceIcon(p, isActive);
 
           return (
             <Marker
@@ -298,113 +386,68 @@ export function InteractiveMap({
             >
               <Popup
                 className="prologis-popup"
-                maxWidth={280}
+                maxWidth={300}
+                minWidth={300}
                 closeButton={false}
               >
-                <div style={{ fontFamily: FONT, minWidth: 240 }}>
-                  {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#0C447C', lineHeight: 1.3 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: '#303234aa', display: 'flex', alignItems: 'center', gap: 3, marginTop: 2 }}>
-                        📍 {p.market}, {p.submarket}
-                      </div>
-                    </div>
+                <div style={{ fontFamily: FONT, width: 300 }}>
+                  {/* Photograph with the close and save affordances over it */}
+                  <div style={{ position: 'relative', height: 170, background: '#E6F1FB' }}>
+                    <img
+                      src={p.images[0]}
+                      alt={p.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
                     <span style={{
-                      padding: '2px 8px',
-                      borderRadius: 12,
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: 'white',
-                      background: p.availabilityStatus === 'available' ? '#00CC66' :
-                                  p.availabilityStatus === 'under_negotiation' ? '#B26A00' : '#0C447C',
-                      whiteSpace: 'nowrap',
+                      position: 'absolute', top: 10, left: 10,
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      padding: '3px 9px', borderRadius: 999,
+                      background: 'rgba(255,255,255,0.95)',
+                      fontSize: 10, fontWeight: 700, color: '#0C447C',
                     }}>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: 999,
+                        background: STATUS_COLORS[p.availabilityStatus] || '#0C447C',
+                      }} />
                       {getStatusLabel(p.availabilityStatus)}
                     </span>
                   </div>
 
-                  {/* Key specs */}
-                  <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0C447C' }}>
-                      {p.sizeSqft.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, color: '#303234aa' }}>SF</span>
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0C447C' }}>
-                      {p.clearHeightFt}' <span style={{ fontSize: 10, fontWeight: 600, color: '#303234aa' }}>Clear</span>
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#0C447C' }}>
-                      {p.dockDoors} <span style={{ fontSize: 10, fontWeight: 600, color: '#303234aa' }}>Docks</span>
-                    </span>
-                    {p.powerCapacityAmps && (
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#0C447C' }}>
-                        ⚡ {p.powerCapacityAmps.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, color: '#303234aa' }}>A</span>
+                  {/* Summary line, then the figures that decide the shortlist */}
+                  <div style={{ padding: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0C447C' }}>{p.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#1B4D4A', whiteSpace: 'nowrap' }}>
+                        {p.locationSignals.laborPoolScore}/100
+                        <span style={{ color: '#303234aa', fontWeight: 500 }}> labor</span>
                       </span>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Essentials badges */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-                    {getEssentialsList(p.essentials).slice(0, 4).map(e => (
-                      <span key={e} style={{
-                        padding: '2px 8px',
-                        borderRadius: 10,
-                        fontSize: 9,
-                        fontWeight: 700,
-                        background: '#E6F1FB',
-                        color: '#0C447C',
-                      }}>{e}</span>
-                    ))}
-                    {p.sustainability.certification && (
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: 10,
-                        fontSize: 9,
-                        fontWeight: 700,
-                        background: '#00CC6618',
-                        color: '#00CC66',
-                      }}>✨ {p.sustainability.certification}</span>
-                    )}
-                  </div>
+                    <div style={{ fontSize: 11.5, color: '#303234aa', marginTop: 2 }}>
+                      {p.market}, {p.submarket}
+                    </div>
 
-                  {/* Delivery reach */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 10px',
-                    borderRadius: 10,
-                    background: '#00C2B20a',
-                    border: '1px solid #00C2B220',
-                    marginBottom: 10,
-                  }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1B4D4A' }}>
-                      🕐 Same-Day Reach: <strong>{p.locationSignals.sameDayReach}</strong>
-                    </span>
-                  </div>
+                    <div style={{ fontSize: 11.5, color: '#303234aa', marginTop: 6 }}>
+                      {p.sizeSqft.toLocaleString()} SF · {p.clearHeightFt}&#39; clear · {p.dockDoors} docks
+                    </div>
 
-                  {/* Rent + CTA */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {p.rentPsf && (
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#00CC66' }}>
-                        ${p.rentPsf}/SF<span style={{ fontSize: 10, fontWeight: 500, color: '#303234aa' }}>/yr</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#0C447C' }}>
+                        {p.rentPsf ? `$${p.rentPsf}/SF` : 'Pricing on request'}
+                        {p.rentPsf && <span style={{ fontSize: 11, fontWeight: 500, color: '#303234aa' }}> per year</span>}
                       </span>
-                    )}
-                    <button
-                      onClick={() => navigate(`/property/${p.id}`)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: 10,
-                        background: '#1B4D4A',
-                        color: 'white',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontFamily: FONT,
-                      }}
-                    >
-                      View Details →
-                    </button>
+                      <button
+                        onClick={() => navigate(`/property/${p.id}`)}
+                        style={{
+                          padding: '6px 12px', borderRadius: 10,
+                          background: '#1B4D4A', color: 'white',
+                          fontSize: 11, fontWeight: 700, border: 'none',
+                          cursor: 'pointer', fontFamily: FONT,
+                        }}
+                      >
+                        View details
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Popup>
@@ -413,74 +456,8 @@ export function InteractiveMap({
         })}
       </MapContainer>
 
-      {/* ─── 1-Hour Delivery Reach label (floating on map when selected) ─── */}
-      {selectedProperty && (
-        <div className="absolute top-4 left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-[#00C2B2]/20 px-4 py-2.5 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#00C2B2]/10 flex items-center justify-center">
-            <Clock size={14} className="text-[#00C2B2]" />
-          </div>
-          <div>
-            <p className="text-[#1B4D4A]" style={{ fontSize: 11, fontWeight: 700 }}>1-Hour Delivery Radius</p>
-            <p className="text-[#303234]/50" style={{ fontSize: 10 }}>
-              Reach: <strong className="text-[#0C447C]">{selectedProperty.locationSignals.sameDayReach}</strong>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Map Overlay Controls (bottom-right floating panel) ─── */}
-      <div className="absolute bottom-5 right-5 z-[1000] bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-[#E6F1FB] overflow-hidden w-52">
-        <div className="px-4 py-2.5 border-b border-[#E6F1FB] flex items-center gap-1.5">
-          <Layers size={13} className="text-[#1B4D4A]" />
-          <span className="text-[#0C447C]" style={{ fontSize: 11, fontWeight: 700 }}>Data Layers</span>
-        </div>
-        {([
-          { key: 'labor' as const, icon: Users, label: 'Labor Pool Density', desc: 'Metro workforce size & scores' },
-          { key: 'highway' as const, icon: Navigation, label: 'Highway Proximity', desc: 'Major interstate routes' },
-          { key: 'transit' as const, icon: Train, label: 'Transit Hubs', desc: 'Intermodal & port terminals' },
-        ]).map(item => (
-          <button
-            key={item.key}
-            onClick={() => toggle(item.key)}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 transition-colors text-left ${
-              overlays[item.key] ? 'bg-[#E6F1FB] text-[#0C447C]' : 'text-[#303234]/50 hover:bg-[#F4F3F3]'
-            }`}
-            style={{ fontSize: 11, fontWeight: overlays[item.key] ? 700 : 500 }}
-          >
-            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-              overlays[item.key] ? 'bg-[#00C2B2] border-[#00C2B2]' : 'border-[#D5DDD5]'
-            }`}>
-              {overlays[item.key] && <span className="text-white" style={{ fontSize: 9 }}>✓</span>}
-            </div>
-            <item.icon size={13} className="shrink-0" />
-            <div>
-              <div>{item.label}</div>
-              {overlays[item.key] && <div className="text-[#303234]/40" style={{ fontSize: 9, fontWeight: 400 }}>{item.desc}</div>}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* ─── Legend (bottom-left) ─── */}
-      <div className="absolute bottom-5 left-5 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-[#E6F1FB] p-3 flex flex-wrap items-center gap-3">
-        {[
-          { color: '#00CC66', label: 'Available' },
-          { color: '#B26A00', label: 'Negotiating' },
-          { color: '#0C447C', label: 'Coming Soon' },
-          { color: '#00C2B2', label: 'Selected', ring: true },
-        ].map(item => (
-          <span key={item.label} className="flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
-              style={{
-                background: item.color,
-                ...(item.ring ? { boxShadow: `0 0 0 2px ${item.color}33, 0 1px 3px rgba(0,0,0,0.1)` } : {}),
-              }}
-            />
-            <span className="text-[#303234]/60" style={{ fontSize: 10, fontWeight: 600 }}>{item.label}</span>
-          </span>
-        ))}
-      </div>
+      {/* Only the analysis toolbar floats on the map; the panels sit in the grid. */}
+      {showControls && <AnalysisToolbar reach={reach} onReachChange={setReach} />}
 
       {/* Inline styles for Leaflet popup override & marker animation */}
       <style>{`
@@ -491,7 +468,15 @@ export function InteractiveMap({
           padding: 0 !important;
         }
         .prologis-popup .leaflet-popup-content {
-          margin: 16px !important;
+          margin: 0 !important;
+          width: 300px !important;
+        }
+        .prologis-popup .leaflet-popup-content-wrapper {
+          overflow: hidden !important;
+        }
+        .price-marker {
+          background: none !important;
+          border: none !important;
         }
         .prologis-popup .leaflet-popup-tip {
           border-top-color: white !important;
@@ -516,6 +501,29 @@ export function InteractiveMap({
           padding: 6px 10px !important;
         }
       `}</style>
+      </div>
+
+      {/* Data Layers — right column card */}
+      {showControls && (
+        <div className="min-h-0" style={{ gridColumn: 2, gridRow: 1 }}>
+          <LayerPanel persona={persona} active={active} onToggle={toggleLayer} />
+        </div>
+      )}
+
+      {/* Why this location fits — full-width bar below the map */}
+      {showControls && selectedProperty && (
+        <div className="min-w-0" style={{ gridColumn: '1 / -1', gridRow: 2 }}>
+          <MatchPanel
+            persona={persona}
+            property={selectedProperty}
+            reachLabel={reachOption.label}
+            onCompare={() => toggleCompare(selectedProperty.id)}
+            onSave={() => toggleSaved(selectedProperty.id)}
+            saved={isSaved(selectedProperty.id)}
+            inCompare={isInCompare(selectedProperty.id)}
+          />
+        </div>
+      )}
     </div>
   );
 }

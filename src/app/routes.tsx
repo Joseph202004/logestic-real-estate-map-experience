@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { PropertyDetailPage } from './pages/PropertyDetailPage';
 import { ComparePage } from './pages/ComparePage';
+import { SavedPage } from './pages/SavedPage';
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       { path: 'search', Component: SearchPage },
       { path: 'property/:id', Component: PropertyDetailPage },
       { path: 'compare', Component: ComparePage },
+      { path: 'saved', Component: SavedPage },
     ],
   },
 ]);

@@ -61,7 +61,12 @@ export function TopNav() {
           </button>
 
           <button
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white/70 hover:text-white hover:bg-white/5 transition-all relative"
+            onClick={() => navigate('/saved')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all relative ${
+              location.pathname === '/saved'
+                ? 'bg-white/10 text-white'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            }`}
             style={{ fontSize: 13, fontWeight: 600 }}
           >
             <Bookmark size={15} />
@@ -100,10 +105,10 @@ export function TopNav() {
             <span className="flex items-center gap-2"><GitCompareArrows size={15} /> Compare</span>
             {compareList.length > 0 && <span className="px-2 py-0.5 bg-[#00C2B2] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{compareList.length}</span>}
           </Link>
-          <button className="flex items-center justify-between py-3 text-white/80 border-b border-white/5 w-full text-left" style={{ fontSize: 14, fontWeight: 600 }}>
+          <Link to="/saved" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-white/80 border-b border-white/5 w-full text-left" style={{ fontSize: 14, fontWeight: 600 }}>
             <span className="flex items-center gap-2"><Bookmark size={15} /> Saved</span>
             {savedProperties.length > 0 && <span className="px-2 py-0.5 bg-[#00C2B2] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{savedProperties.length}</span>}
-          </button>
+          </Link>
           <button className="mt-3 w-full py-2.5 bg-white text-[#1B4D4A] rounded-xl" style={{ fontSize: 13, fontWeight: 700 }}>
             Sign In
           </button>
