@@ -1,6 +1,7 @@
 export { useFilters } from './useFilters';
 export type { UseFilters } from './useFilters';
 export { FilterBar } from './FilterBar';
+export { FilterPanel } from './FilterPanel';
 export { FilterModal } from './FilterModal';
 export { FilterSlider, OptionRow, ChipPill } from './controls';
 export {

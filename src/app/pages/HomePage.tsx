@@ -2,12 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Search, ArrowRight, Building2, Truck, Factory, ShoppingBag, Briefcase,
-  Sparkles, ChevronDown, Globe, Shield, Leaf, Zap, ChevronRight,
-  Package, MapPin, Users, Sun, Plug, BarChart3, TrendingUp
+  ChevronDown, Globe, Shield, ChevronRight, TrendingUp
 } from 'lucide-react';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 /* ─── Dropdown data ─── */
 const roles = [
@@ -83,8 +81,8 @@ function PillDropdown({
         className={`
           inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border-2 transition-all duration-200 cursor-pointer
           ${value
-            ? 'border-[#00C2B2] bg-[#00C2B2]/8 text-[#1B4D4A]'
-            : 'border-[#00C2B2]/40 bg-white text-[#0C447C] hover:border-[#00C2B2] hover:bg-[#00C2B2]/5'
+            ? 'border-[#6750A4] bg-[#6750A4]/8 text-[#6750A4]'
+            : 'border-[#6750A4]/40 bg-white text-[#21005D] hover:border-[#6750A4] hover:bg-[#6750A4]/5'
           }
         `}
         style={{ fontFamily: FONT, fontSize: 15, fontWeight: 600 }}
@@ -94,17 +92,17 @@ function PillDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-[#E6F1FB] z-50 py-2 overflow-hidden"
+        <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-[#E7E0EC] z-50 py-2 overflow-hidden"
           style={{ boxShadow: '0 20px 60px rgba(27,77,74,0.15)' }}
         >
           {options.map(opt => (
             <button
               key={opt.id}
               onClick={() => { onChange(opt.id, opt.label); onToggle(); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#E6F1FB] transition-colors"
-              style={{ fontFamily: FONT, fontSize: 13, fontWeight: 500, color: '#303234' }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#E7E0EC] transition-colors"
+              style={{ fontFamily: FONT, fontSize: 13, fontWeight: 500, color: '#1D1B20' }}
             >
-              {opt.icon && <opt.icon size={16} className="text-[#1B4D4A] shrink-0" />}
+              {opt.icon && <opt.icon size={16} className="text-[#6750A4] shrink-0" />}
               {opt.label}
             </button>
           ))}
@@ -131,14 +129,14 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F3F3]" style={{ fontFamily: FONT }}>
+    <div className="min-h-screen bg-[#FEF7FF]" style={{ fontFamily: FONT }}>
 
       {/* ═══════════════════════════════════════════════════════════════
           SCREEN 1 — THE PERSONALIZED "INTENT" HERO SECTION
           ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         {/* Blueprint grid background */}
-        <div className="absolute inset-0 bg-[#1B4D4A]">
+        <div className="absolute inset-0 bg-[#6750A4]">
           <div className="absolute inset-0 opacity-[0.06]">
             <svg width="100%" height="100%">
               <defs>
@@ -153,17 +151,17 @@ export function HomePage() {
             </svg>
           </div>
           {/* Subtle radial glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-[#00C2B2]/6 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-[#6750A4]/6 blur-3xl" />
         </div>
 
         <div className="relative max-w-[1280px] mx-auto px-8 pt-20 pb-28">
           {/* Small label */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="h-px w-8 bg-[#00C2B2]/50" />
-            <span className="text-[#00C2B2] tracking-[0.2em] uppercase" style={{ fontSize: 11, fontWeight: 700 }}>
+            <div className="h-px w-8 bg-[#6750A4]/50" />
+            <span className="text-[#6750A4] tracking-[0.2em] uppercase" style={{ fontSize: 11, fontWeight: 700 }}>
               Logistics Property Intelligence
             </span>
-            <div className="h-px w-8 bg-[#00C2B2]/50" />
+            <div className="h-px w-8 bg-[#6750A4]/50" />
           </div>
 
           {/* Headline */}
@@ -216,7 +214,7 @@ export function HomePage() {
               <div className="mt-8 flex flex-col items-center gap-4">
                 <button
                   onClick={handleSearch}
-                  className="group flex items-center gap-2.5 px-8 py-4 bg-[#1B4D4A] text-white rounded-2xl hover:bg-[#187770] transition-all duration-200 shadow-lg shadow-[#1B4D4A]/30 hover:shadow-xl hover:shadow-[#187770]/30"
+                  className="group flex items-center gap-2.5 px-8 py-4 bg-[#6750A4] text-white rounded-2xl hover:bg-[#4F378B] transition-all duration-200 shadow-lg shadow-[#6750A4]/30 hover:shadow-xl hover:shadow-[#4F378B]/30"
                   style={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.02em' }}
                 >
                   <Search size={18} />
@@ -226,7 +224,7 @@ export function HomePage() {
 
                 <button
                   onClick={() => navigate('/search')}
-                  className="text-white/40 hover:text-[#00C2B2] transition-colors flex items-center gap-1.5"
+                  className="text-white/40 hover:text-[#6750A4] transition-colors flex items-center gap-1.5"
                   style={{ fontSize: 12, fontWeight: 500 }}
                 >
                   Or browse all available properties
@@ -249,7 +247,7 @@ export function HomePage() {
               <button
                 key={chip.segment}
                 onClick={() => navigate(`/search?type=${chip.segment}`)}
-                className="px-4 py-1.5 rounded-full border border-white/15 text-white/60 hover:border-[#00C2B2]/50 hover:text-[#00C2B2] hover:bg-[#00C2B2]/5 transition-all"
+                className="px-4 py-1.5 rounded-full border border-white/15 text-white/60 hover:border-[#6750A4]/50 hover:text-[#6750A4] hover:bg-[#6750A4]/5 transition-all"
                 style={{ fontSize: 11, fontWeight: 600 }}
               >
                 {chip.label}
@@ -261,144 +259,23 @@ export function HomePage() {
 
       {/* ─── Stats Bar ─── */}
       <section className="relative -mt-10 z-10 max-w-[1100px] mx-auto px-8">
-        <div className="bg-white rounded-2xl shadow-xl shadow-black/5 border border-[#E6F1FB] grid grid-cols-2 md:grid-cols-4 divide-x divide-[#E6F1FB]">
+        <div className="bg-white rounded-2xl shadow-xl shadow-black/5 border border-[#E7E0EC] grid grid-cols-2 md:grid-cols-4 divide-x divide-[#E7E0EC]">
           {stats.map((s, i) => (
             <div key={i} className="flex items-center gap-3.5 py-6 px-6">
-              <div className="w-11 h-11 rounded-xl bg-[#E6F1FB] flex items-center justify-center shrink-0">
-                <s.icon size={20} className="text-[#1B4D4A]" />
+              <div className="w-11 h-11 rounded-xl bg-[#E7E0EC] flex items-center justify-center shrink-0">
+                <s.icon size={20} className="text-[#6750A4]" />
               </div>
               <div>
-                <p className="text-[#0C447C]" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
+                <p className="text-[#21005D]" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
                   {s.value}<span style={{ fontSize: 14 }}>{s.unit}</span>
                 </p>
-                <p className="text-[#303234]/50 mt-0.5" style={{ fontSize: 11, fontWeight: 500 }}>{s.label}</p>
+                <p className="text-[#1D1B20]/50 mt-0.5" style={{ fontSize: 11, fontWeight: 500 }}>{s.label}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─── Segment Cards Section ─── */}
-      <section className="max-w-[1100px] mx-auto px-8 py-20">
-        <div className="text-center mb-10">
-          <p className="text-[#1B4D4A] tracking-[0.15em] uppercase mb-2" style={{ fontSize: 11, fontWeight: 700 }}>Tailored Workflows</p>
-          <h2 className="text-[#0C447C]" style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.01em' }}>
-            Search Tuned for Your Business
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {roles.map(seg => (
-            <button
-              key={seg.id}
-              onClick={() => navigate(`/search?segment=${seg.id}`)}
-              className="group bg-white rounded-2xl p-6 text-left border border-transparent hover:border-[#00C2B2]/30 hover:shadow-lg hover:shadow-[#00C2B2]/5 transition-all duration-200 hover:-translate-y-1"
-            >
-              <div className="w-11 h-11 rounded-xl bg-[#E6F1FB] group-hover:bg-[#00C2B2]/10 flex items-center justify-center mb-4 transition-colors">
-                <seg.icon size={20} className="text-[#1B4D4A] group-hover:text-[#00C2B2] transition-colors" />
-              </div>
-              <p className="text-[#0C447C] mb-1" style={{ fontSize: 14, fontWeight: 700 }}>{seg.label}</p>
-              <p className="text-[#303234]/50" style={{ fontSize: 11, lineHeight: 1.5 }}>
-                {seg.id === 'ecommerce-operator' && 'Speed-to-market, dock-heavy, automation-ready'}
-                {seg.id === '3pl-provider' && 'Multi-market search, portfolio workflows'}
-                {seg.id === 'manufacturer' && 'Heavy power, rail access, build-to-suit'}
-                {seg.id === 'retailer' && 'Seasonal flex, consumer proximity'}
-                {seg.id === 'broker' && 'Bulk export, compare, LOI handoff'}
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── Prologis Essentials Highlight ─── */}
-      <section className="bg-white border-y border-[#E6F1FB]">
-        <div className="max-w-[1100px] mx-auto px-8 py-20">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <span className="text-[#00C2B2] tracking-[0.15em] uppercase" style={{ fontSize: 11, fontWeight: 700 }}>Prologis Essentials</span>
-              <h2 className="text-[#0C447C] mt-2 mb-4" style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.01em' }}>
-                More Than a Building.<br />A Logistics Platform.
-              </h2>
-              <p className="text-[#303234]/60 mb-8" style={{ fontSize: 14, lineHeight: 1.8 }}>
-                From solar energy and EV charging to racking systems and workforce programs—Prologis Essentials turns every facility into an operational advantage. Available during search, not after deal close.
-              </p>
-
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { icon: Sun, label: 'Solar & LED', color: '#00CC66' },
-                  { icon: Plug, label: 'EV Charging', color: '#00C2B2' },
-                  { icon: Package, label: 'Racking & Forklifts', color: '#0C447C' },
-                  { icon: Users, label: 'Workforce Training', color: '#1B4D4A' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3 bg-[#F4F3F3] rounded-xl">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: item.color + '12' }}>
-                      <item.icon size={16} style={{ color: item.color }} />
-                    </div>
-                    <span className="text-[#303234]" style={{ fontSize: 13, fontWeight: 600 }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => navigate('/search')}
-                className="mt-8 px-6 py-3 bg-[#1B4D4A] text-white rounded-xl hover:bg-[#187770] transition-colors"
-                style={{ fontSize: 13, fontWeight: 700 }}
-              >
-                Explore Properties with Essentials
-              </button>
-            </div>
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/10">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1726866492047-7f9516558c6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXJlaG91c2UlMjBzb2xhciUyMHBhbmVscyUyMHJvb2Z0b3B8ZW58MXx8fHwxNzc1NjMzNjI1fDA&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Prologis Essentials"
-                  className="w-full h-[360px] object-cover"
-                />
-              </div>
-              {/* Floating badge */}
-              <div className="absolute -bottom-5 -left-5 bg-white rounded-xl shadow-lg border border-[#E6F1FB] p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#00CC66]/10 flex items-center justify-center">
-                  <BarChart3 size={18} className="text-[#00CC66]" />
-                </div>
-                <div>
-                  <p className="text-[#0C447C]" style={{ fontSize: 16, fontWeight: 800 }}>~32%</p>
-                  <p className="text-[#303234]/50" style={{ fontSize: 10, fontWeight: 500 }}>Avg. CapEx Reduction</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── CTA Section ─── */}
-      <section className="max-w-[1100px] mx-auto px-8 py-20 text-center">
-        <h2 className="text-[#0C447C] mb-3" style={{ fontSize: 28, fontWeight: 800 }}>
-          Ready to Find Your Next Facility?
-        </h2>
-        <p className="text-[#303234]/50 mb-8 max-w-md mx-auto" style={{ fontSize: 14, lineHeight: 1.7 }}>
-          Search by operational specs. Compare side-by-side. Connect with local market experts.
-        </p>
-        <button
-          onClick={() => navigate('/search')}
-          className="px-8 py-3.5 bg-[#1B4D4A] text-white rounded-2xl hover:bg-[#187770] transition-all shadow-lg shadow-[#1B4D4A]/20"
-          style={{ fontSize: 15, fontWeight: 700 }}
-        >
-          Browse Available Properties
-        </button>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="bg-[#303234] text-white/50 py-8">
-        <div className="max-w-[1100px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-[#1B4D4A]" style={{ fontWeight: 800, fontSize: 11 }}>P</span>
-            </div>
-            <span className="text-white/70" style={{ fontWeight: 700, fontSize: 14, letterSpacing: '0.05em' }}>PROLOGIS</span>
-          </div>
-          <p style={{ fontSize: 11 }}>&copy; 2026 Prologis, Inc. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

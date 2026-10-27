@@ -9,18 +9,18 @@ export type LayerId =
   | 'reach' | 'highway' | 'labor' | 'transit'
   | 'parcel' | 'demand' | 'suppliers' | 'stores' | 'coldChain' | 'rent' | 'risk';
 
-export const layerDefs: Record<LayerId, { label: string; desc: string; available: boolean }> = {
-  reach: { label: 'Delivery reach', desc: 'Isochrone around the selected property', available: true },
-  highway: { label: 'Highway proximity', desc: 'Major interstate corridors', available: true },
-  labor: { label: 'Labor availability', desc: 'Metro workforce size & scores', available: true },
-  transit: { label: 'Intermodal & ports', desc: 'Rail terminals and port facilities', available: true },
-  parcel: { label: 'Parcel hubs', desc: 'Carrier sortation facilities', available: false },
-  demand: { label: 'Customer demand', desc: 'Consumer density heatmap', available: false },
-  suppliers: { label: 'Supplier network', desc: 'Upstream supplier locations', available: false },
-  stores: { label: 'Store network', desc: 'Your retail locations', available: false },
-  coldChain: { label: 'Cold-chain network', desc: 'Refrigerated facilities and reefer plugs', available: false },
-  rent: { label: 'Asking-rent heatmap', desc: 'Market rent by submarket', available: false },
-  risk: { label: 'Outage & flood risk', desc: 'Natural hazard exposure', available: false },
+export const layerDefs: Record<LayerId, { label: string; desc: string; available: boolean; color: string }> = {
+  reach: { label: 'Delivery reach', desc: 'Isochrone around the selected property', available: true, color: '#6750A4' },
+  highway: { label: 'Highway proximity', desc: 'Major interstate corridors', available: true, color: '#6750A4' },
+  labor: { label: 'Labor availability', desc: 'Metro workforce size & scores', available: true, color: '#6750A4' },
+  transit: { label: 'Intermodal & ports', desc: 'Rail terminals and port facilities', available: true, color: '#21005D' },
+  parcel: { label: 'Parcel hubs', desc: 'Carrier sortation facilities', available: true, color: '#E8963A' },
+  demand: { label: 'Customer demand', desc: 'Consumer density heatmap', available: true, color: '#C74B78' },
+  suppliers: { label: 'Supplier network', desc: 'Upstream supplier locations', available: true, color: '#2E7D5B' },
+  stores: { label: 'Store network', desc: 'Your retail locations', available: true, color: '#3E6DB5' },
+  coldChain: { label: 'Cold-chain network', desc: 'Refrigerated facilities and reefer plugs', available: true, color: '#1B7A8C' },
+  rent: { label: 'Asking-rent heatmap', desc: 'Market rent by submarket', available: true, color: '#B3261E' },
+  risk: { label: 'Outage & flood risk', desc: 'Natural hazard exposure', available: true, color: '#8C5000' },
 };
 
 /** One line in the "why this location fits" panel. */
@@ -51,10 +51,10 @@ export const personas: Persona[] = [
   {
     id: 'ecommerce',
     label: 'E-commerce operator',
-    tagline: 'Delivery reach · Highways · Labor',
+    tagline: 'Delivery reach · Drive time · Labor',
     icon: ShoppingBag,
-    recommended: ['reach', 'highway', 'labor'],
-    additional: ['parcel', 'demand', 'transit', 'rent'],
+    recommended: ['reach', 'labor', 'parcel'],
+    additional: ['demand', 'transit', 'rent'],
     signals: p => [
       { ok: true, text: `${reach(p)} reachable same day`, weight: 0.3 },
       { ok: p.dockDoors >= 40, text: p.dockDoors >= 40 ? `${p.dockDoors} dock doors for parcel throughput` : `Only ${p.dockDoors} dock doors for parcel throughput`, weight: 0.2 },
@@ -66,10 +66,10 @@ export const personas: Persona[] = [
   {
     id: '3pl',
     label: '3PL provider',
-    tagline: 'Freight corridors · Intermodal · Multi-market',
+    tagline: 'Drive time · Intermodal · Multi-market',
     icon: Truck,
-    recommended: ['highway', 'transit', 'reach'],
-    additional: ['labor', 'demand', 'rent', 'risk'],
+    recommended: ['transit', 'reach', 'labor'],
+    additional: ['demand', 'rent', 'risk'],
     signals: p => [
       { ok: p.locationSignals.intermodalDistanceMiles != null && p.locationSignals.intermodalDistanceMiles <= 20,
         text: p.locationSignals.intermodalDistanceMiles != null
@@ -86,8 +86,8 @@ export const personas: Persona[] = [
     label: 'Manufacturer',
     tagline: 'Power · Rail · Skilled labor',
     icon: Factory,
-    recommended: ['highway', 'labor', 'transit'],
-    additional: ['suppliers', 'risk', 'rent', 'reach'],
+    recommended: ['labor', 'transit', 'suppliers'],
+    additional: ['risk', 'rent', 'reach'],
     signals: p => [
       { ok: (p.powerCapacityAmps || 0) >= 6000,
         text: !p.powerCapacityAmps ? 'Power capacity not stated'
@@ -105,8 +105,8 @@ export const personas: Persona[] = [
     label: 'Retailer / distributor',
     tagline: 'Store network · Replenishment · Coverage',
     icon: Building2,
-    recommended: ['reach', 'highway', 'demand'],
-    additional: ['stores', 'labor', 'transit', 'rent'],
+    recommended: ['reach', 'demand', 'stores'],
+    additional: ['labor', 'transit', 'rent'],
     signals: p => [
       { ok: true, text: `Replenishment reach: ${reach(p)}`, weight: 0.3 },
       { ok: p.sizeSqft >= 200000, text: `${p.sizeSqft.toLocaleString()} SF${p.sizeSqft >= 200000 ? ' for seasonal inventory' : ' — tight for seasonal peaks'}`, weight: 0.25 },
@@ -120,8 +120,8 @@ export const personas: Persona[] = [
     label: 'Cold-chain operator',
     tagline: 'Temperature · Power reliability · Reefer access',
     icon: Snowflake,
-    recommended: ['coldChain', 'highway', 'reach'],
-    additional: ['risk', 'labor', 'transit', 'rent'],
+    recommended: ['coldChain', 'reach', 'labor'],
+    additional: ['risk', 'transit', 'rent'],
     signals: p => [
       { ok: p.coldStorageReady, text: p.coldStorageReady ? 'Cold-storage ready' : 'Not cold-storage ready — conversion required', weight: 0.4 },
       { ok: (p.powerCapacityAmps || 0) >= 6000,
@@ -138,8 +138,8 @@ export const personas: Persona[] = [
     label: 'Broker / tenant rep',
     tagline: 'Availability · Match score · Asking rent',
     icon: Briefcase,
-    recommended: ['reach', 'highway', 'rent'],
-    additional: ['labor', 'transit', 'demand', 'risk'],
+    recommended: ['reach', 'rent', 'demand'],
+    additional: ['labor', 'transit', 'risk'],
     signals: p => [
       { ok: p.availabilityStatus === 'available', text: `Status: ${p.availabilityStatus.replace('_', ' ')}`, weight: 0.25 },
       { ok: p.rentPsf != null, text: p.rentPsf ? `Asking $${p.rentPsf}/SF` : 'Rent on request — harder to benchmark', weight: 0.25 },

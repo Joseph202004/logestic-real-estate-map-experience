@@ -70,17 +70,17 @@ Use these as placeholders and make them easy to swap later:
 
 ```ts
 const tokens = {
-  brandPrimary: '#0B4EA2',
-  brandPrimaryDark: '#083B7A',
-  ink: '#10202F',
-  textSecondary: '#4C5A67',
-  surface: '#F5F7FA',
+  brandPrimary: '#6750A4',
+  brandPrimaryDark: '#21005D',
+  ink: '#322F35',
+  textSecondary: '#49454F',
+  surface: '#F7F2FA',
   card: '#FFFFFF',
-  border: '#D9E1E8',
-  success: '#1D6B57',
-  warning: '#B26A00',
-  danger: '#B42318',
-  accentSky: '#E9F2FB'
+  border: '#CAC4D0',
+  success: '#4F378B',
+  warning: '#8C5000',
+  danger: '#B3261E',
+  accentSky: '#E7E0EC'
 }
 ```
 

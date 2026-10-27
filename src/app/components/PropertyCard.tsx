@@ -7,12 +7,12 @@ import type { Property } from '../data/properties';
 import { useApp } from '../context/AppContext';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 const STATUS_COLOR: Record<Property['availabilityStatus'], string> = {
-  available: '#00CC66',
-  under_negotiation: '#B26A00',
-  coming_soon: '#0C447C',
+  available: '#2E7D32',
+  under_negotiation: '#8C5000',
+  coming_soon: '#21005D',
 };
 
 /** One stat in the divided column strip: value over label. */
@@ -65,11 +65,11 @@ export function PropertyCard({
       ref={cardRef}
       onClick={() => onSelect(property.id)}
       className={`
-        group relative rounded-2xl overflow-hidden cursor-pointer bg-[#0A2338]
+        group relative rounded-2xl overflow-hidden cursor-pointer bg-[#322F35]
         transition-all duration-250 hover:-translate-y-0.5
         ${isSelected
-          ? 'ring-2 ring-[#00C2B2] shadow-lg shadow-[#00C2B2]/20'
-          : 'ring-1 ring-black/5 shadow-sm hover:ring-[#00C2B2]/40 hover:shadow-xl hover:shadow-[#0C2B45]/20'
+          ? 'ring-2 ring-[#6750A4] shadow-lg shadow-[#6750A4]/20'
+          : 'ring-1 ring-black/5 shadow-sm hover:ring-[#6750A4]/40 hover:shadow-xl hover:shadow-[#322F35]/20'
         }
       `}
       style={{ fontFamily: FONT }}
@@ -82,12 +82,12 @@ export function PropertyCard({
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
         {/* Gradient carrying the text over the image */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A2338] via-[#0A2338]/85 via-40% to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#322F35] via-[#322F35]/85 via-40% to-transparent" />
 
         {/* Status pill */}
         <div className="absolute top-3 left-3">
           <span
-            className="inline-flex items-center gap-1.5 pl-2 pr-2.5 h-[22px] rounded-full bg-white/95 backdrop-blur-sm text-[#0C447C] shadow-sm"
+            className="inline-flex items-center gap-1.5 pl-2 pr-2.5 h-[22px] rounded-full bg-white/95 backdrop-blur-sm text-[#21005D] shadow-sm"
             style={{ fontSize: 10, fontWeight: 700 }}
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLOR[property.availabilityStatus] }} />
@@ -102,13 +102,13 @@ export function PropertyCard({
             className="w-[26px] h-[26px] rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
             aria-label={isSaved(property.id) ? 'Remove from saved' : 'Save property'}
           >
-            <Bookmark size={12} className={isSaved(property.id) ? 'text-[#00C2B2] fill-[#00C2B2]' : 'text-[#0C447C]'} />
+            <Bookmark size={12} className={isSaved(property.id) ? 'text-[#6750A4] fill-[#6750A4]' : 'text-[#21005D]'} />
           </button>
           <button
             onClick={e => { e.stopPropagation(); toggleCompare(property.id); }}
             className={`
               inline-flex items-center gap-1 px-2 h-[26px] rounded-full backdrop-blur-sm transition-colors
-              ${isInCompare(property.id) ? 'bg-[#00C2B2] text-white' : 'bg-white/90 text-[#0C447C] hover:bg-white'}
+              ${isInCompare(property.id) ? 'bg-[#6750A4] text-white' : 'bg-white/90 text-[#21005D] hover:bg-white'}
             `}
             style={{ fontSize: 9.5, fontWeight: 700 }}
           >
@@ -145,7 +145,7 @@ export function PropertyCard({
 
       {/* Footer: essentials and the way through to the PDP */}
       {/* -mt-px overlaps the photo by a pixel so no hairline can show through */}
-      <div className="relative z-10 -mt-px flex items-center gap-2 px-4 pb-3 pt-1 bg-[#0A2338]">
+      <div className="relative z-10 -mt-px flex items-center gap-2 px-4 pb-3 pt-1 bg-[#322F35]">
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
           {essentials.slice(0, 2).map(e => (
             <span key={e.label} className="inline-flex items-center gap-1 text-white/55 transition-colors group-hover:text-white/75 whitespace-nowrap" style={{ fontSize: 9.5, fontWeight: 600 }}>
@@ -158,7 +158,7 @@ export function PropertyCard({
             </span>
           )}
           {property.sustainability.certification && (
-            <span className="inline-flex items-center gap-1 text-[#4ADE80] whitespace-nowrap" style={{ fontSize: 9.5, fontWeight: 700 }}>
+            <span className="inline-flex items-center gap-1 text-[#4F9E5A] whitespace-nowrap" style={{ fontSize: 9.5, fontWeight: 700 }}>
               <Sparkles size={10} /> {property.sustainability.certification}
             </span>
           )}
@@ -166,7 +166,7 @@ export function PropertyCard({
 
         <button
           onClick={e => { e.stopPropagation(); onViewDetails(property.id); }}
-          className="shrink-0 inline-flex items-center gap-1 text-white/85 transition-colors group-hover:text-[#00C2B2] hover:!text-[#00C2B2]"
+          className="shrink-0 inline-flex items-center gap-1 text-white/85 transition-colors group-hover:text-[#6750A4] hover:!text-[#6750A4]"
           style={{ fontSize: 10.5, fontWeight: 700, fontFamily: FONT }}
         >
           View Details <ArrowUpRight size={12} />

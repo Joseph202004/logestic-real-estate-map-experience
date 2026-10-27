@@ -459,9 +459,9 @@ export function getStatusLabel(s: Property['availabilityStatus']): string {
 
 export function getStatusColor(s: Property['availabilityStatus']): string {
   switch (s) {
-    case 'available': return 'bg-[#00CC66] text-white';
-    case 'under_negotiation': return 'bg-[#B26A00] text-white';
-    case 'coming_soon': return 'bg-[#0C447C] text-white';
+    case 'available': return 'bg-[#2E7D32] text-white';
+    case 'under_negotiation': return 'bg-[#8C5000] text-white';
+    case 'coming_soon': return 'bg-[#21005D] text-white';
   }
 }
 

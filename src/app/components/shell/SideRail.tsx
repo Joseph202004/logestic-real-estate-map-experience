@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router';
 import { Bookmark, GitCompareArrows, LayoutDashboard, Search, Settings } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 /**
  * Slim icon rail on the left of the workspace, as in the reference dashboards.
@@ -21,11 +21,11 @@ export function SideRail() {
 
   return (
     <nav
-      className="hidden md:flex w-[64px] shrink-0 flex-col items-center gap-1 py-4 bg-white border-r border-[#E6F1FB]"
+      className="hidden md:flex w-[64px] shrink-0 flex-col items-center gap-1 py-4 bg-white border-r border-[#E7E0EC]"
       style={{ fontFamily: FONT }}
       aria-label="Workspace"
     >
-      <Link to="/" className="w-9 h-9 rounded-xl bg-[#1B4D4A] flex items-center justify-center mb-3" aria-label="Prologis home">
+      <Link to="/" className="w-9 h-9 rounded-xl bg-[#6750A4] flex items-center justify-center mb-3" aria-label="Prologis home">
         <span className="text-white" style={{ fontWeight: 800, fontSize: 14, lineHeight: 1 }}>P</span>
       </Link>
 
@@ -42,14 +42,14 @@ export function SideRail() {
             aria-label={item.label}
             aria-current={active ? 'page' : undefined}
             className={`
-              relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors
-              ${active ? 'bg-[#E6F1FB] text-[#0C447C]' : 'text-[#303234]/40 hover:bg-[#F4F3F3] hover:text-[#1B4D4A]'}
+              relative w-11 h-10 rounded-full flex items-center justify-center transition-colors
+              ${active ? 'bg-[#E8DEF8] text-[#21005D]' : 'text-[#1D1B20]/40 hover:bg-[#FEF7FF] hover:text-[#6750A4]'}
             `}
           >
             <item.icon size={17} />
             {item.badge > 0 && (
               <span
-                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[#00C2B2] text-white flex items-center justify-center"
+                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[#6750A4] text-white flex items-center justify-center"
                 style={{ fontSize: 9, fontWeight: 800 }}
               >
                 {item.badge}
@@ -60,13 +60,19 @@ export function SideRail() {
       })}
 
       <div className="mt-auto">
-        <button
+        <Link
+          to="/settings"
           title="Settings"
           aria-label="Settings"
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-[#303234]/35 hover:bg-[#F4F3F3] hover:text-[#1B4D4A] transition-colors"
+          aria-current={location.pathname.startsWith('/settings') ? 'page' : undefined}
+          className={`w-11 h-10 rounded-full flex items-center justify-center transition-colors ${
+            location.pathname.startsWith('/settings')
+              ? 'bg-[#E8DEF8] text-[#21005D]'
+              : 'text-[#1D1B20]/35 hover:bg-[#FEF7FF] hover:text-[#6750A4]'
+          }`}
         >
           <Settings size={17} />
-        </button>
+        </Link>
       </div>
     </nav>
   );

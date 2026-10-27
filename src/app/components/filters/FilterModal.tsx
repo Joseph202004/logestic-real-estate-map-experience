@@ -5,7 +5,7 @@ import { ChipPill, FilterSlider, OptionRow } from './controls';
 import type { CategoryId } from './types';
 import type { UseFilters } from './useFilters';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 /** Master/detail filter dialog: category rail on the left, its controls on the right. */
 export function FilterModal({
@@ -32,7 +32,7 @@ export function FilterModal({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4 bg-[#0C447C]/30 backdrop-blur-sm"
+      className="fixed inset-0 flex items-center justify-center p-4 bg-[#21005D]/30 backdrop-blur-sm"
       // Leaflet's map panes sit at z-index 400–700, so the dialog has to clear them.
       style={{ fontFamily: FONT, zIndex: 9999 }}
       onClick={onClose}
@@ -45,15 +45,15 @@ export function FilterModal({
         aria-label="Logistics filters"
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-[#E6F1FB]">
+        <div className="px-6 pt-5 pb-4 border-b border-[#E7E0EC]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-[#0C447C]" style={{ fontSize: 18, fontWeight: 800 }}>Logistics Filters</h2>
-              <p className="text-[#303234]/50 mt-0.5" style={{ fontSize: 12, fontWeight: 500 }}>
+              <h2 className="text-[#21005D]" style={{ fontSize: 18, fontWeight: 800 }}>Logistics Filters</h2>
+              <p className="text-[#1D1B20]/50 mt-0.5" style={{ fontSize: 12, fontWeight: 500 }}>
                 Narrow the map and list by how the building has to run.
               </p>
             </div>
-            <button onClick={onClose} className="text-[#303234]/40 hover:text-[#0C447C] transition-colors" aria-label="Close filters">
+            <button onClick={onClose} className="text-[#1D1B20]/40 hover:text-[#21005D] transition-colors" aria-label="Close filters">
               <X size={20} />
             </button>
           </div>
@@ -61,13 +61,13 @@ export function FilterModal({
 
         <div className="flex-1 flex min-h-0">
           {/* Left rail: categories */}
-          <div className="w-[42%] max-w-[320px] border-r border-[#E6F1FB] overflow-y-auto p-4 bg-[#F8FAFC]">
+          <div className="w-[42%] max-w-[320px] border-r border-[#E7E0EC] overflow-y-auto p-4 bg-[#F7F2FA]">
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[#0C447C]" style={{ fontSize: 12, fontWeight: 800 }}>Filters</span>
+              <span className="text-[#21005D]" style={{ fontSize: 12, fontWeight: 800 }}>Filters</span>
               {f.activeCount > 0 && (
                 <button
                   onClick={f.clearAll}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#00C2B2]/10 text-[#1B4D4A] rounded-full hover:bg-[#00C2B2]/20 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#6750A4]/10 text-[#6750A4] rounded-full hover:bg-[#6750A4]/20 transition-colors"
                   style={{ fontSize: 10, fontWeight: 700 }}
                 >
                   {f.activeCount} applied <X size={10} />
@@ -85,15 +85,15 @@ export function FilterModal({
                     onClick={() => setCategory(c.id)}
                     className={`
                       rounded-xl border cursor-pointer transition-all bg-white
-                      ${selected ? 'border-[#00C2B2] shadow-sm' : 'border-[#E6F1FB] hover:border-[#00C2B2]/40'}
+                      ${selected ? 'border-[#6750A4] shadow-sm' : 'border-[#E7E0EC] hover:border-[#6750A4]/40'}
                     `}
                   >
                     <div className="flex items-center gap-2 px-3 py-2.5">
-                      <c.icon size={14} className={selected ? 'text-[#00C2B2]' : 'text-[#303234]/40'} />
-                      <span className={selected ? 'text-[#0C447C]' : 'text-[#303234]/70'} style={{ fontSize: 12, fontWeight: 700 }}>
+                      <c.icon size={14} className={selected ? 'text-[#6750A4]' : 'text-[#1D1B20]/40'} />
+                      <span className={selected ? 'text-[#21005D]' : 'text-[#1D1B20]/70'} style={{ fontSize: 12, fontWeight: 700 }}>
                         {c.label}
                       </span>
-                      <ChevronRight size={14} className="ml-auto text-[#303234]/30" />
+                      <ChevronRight size={14} className="ml-auto text-[#1D1B20]/30" />
                     </div>
                     {chips.length > 0 && (
                       <div className="flex flex-wrap gap-1 px-3 pb-2.5">
@@ -110,8 +110,8 @@ export function FilterModal({
 
           {/* Right pane: the selected category */}
           <div className="flex-1 overflow-y-auto p-5">
-            <h3 className="text-[#0C447C]" style={{ fontSize: 15, fontWeight: 800 }}>{active.label}</h3>
-            <p className="text-[#303234]/50 mb-4" style={{ fontSize: 12, fontWeight: 500 }}>{active.blurb}</p>
+            <h3 className="text-[#21005D]" style={{ fontSize: 15, fontWeight: 800 }}>{active.label}</h3>
+            <p className="text-[#1D1B20]/50 mb-4" style={{ fontSize: 12, fontWeight: 500 }}>{active.blurb}</p>
 
             {category === 'size' && (
               <FilterSlider
@@ -161,7 +161,7 @@ export function FilterModal({
                     onClick={() => f.togglePossession(o.id)}
                   />
                 ))}
-                <p className="text-[#303234]/40 pt-1" style={{ fontSize: 10.5 }}>
+                <p className="text-[#1D1B20]/40 pt-1" style={{ fontSize: 10.5 }}>
                   Pick several to widen the results.
                 </p>
               </div>
@@ -178,7 +178,7 @@ export function FilterModal({
                     onClick={() => f.toggleLeaseTerm(o.id)}
                   />
                 ))}
-                <p className="text-[#303234]/40 pt-1" style={{ fontSize: 10.5 }}>
+                <p className="text-[#1D1B20]/40 pt-1" style={{ fontSize: 10.5 }}>
                   Pick several to widen the results.
                 </p>
               </div>
@@ -196,7 +196,7 @@ export function FilterModal({
                     onClick={() => f.toggleFeature(o.id)}
                   />
                 ))}
-                <p className="text-[#303234]/40 pt-1" style={{ fontSize: 10.5 }}>
+                <p className="text-[#1D1B20]/40 pt-1" style={{ fontSize: 10.5 }}>
                   Every feature you switch on must be present.
                 </p>
               </div>
@@ -205,18 +205,18 @@ export function FilterModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-[#E6F1FB] flex items-center justify-between bg-white">
+        <div className="px-6 py-3.5 border-t border-[#E7E0EC] flex items-center justify-between bg-white">
           <button
             onClick={f.clearAll}
             disabled={f.activeCount === 0}
-            className="text-[#B42318] disabled:text-[#303234]/25 hover:underline disabled:no-underline"
+            className="text-[#B3261E] disabled:text-[#1D1B20]/25 hover:underline disabled:no-underline"
             style={{ fontSize: 12, fontWeight: 600 }}
           >
             Clear all
           </button>
           <button
             onClick={onClose}
-            className="px-5 py-2.5 bg-[#1B4D4A] text-white rounded-xl hover:bg-[#187770] transition-colors"
+            className="px-5 py-2.5 bg-[#6750A4] text-white rounded-xl hover:bg-[#4F378B] transition-colors"
             style={{ fontSize: 12, fontWeight: 700 }}
           >
             Show {resultCount} {resultCount === 1 ? 'property' : 'properties'}

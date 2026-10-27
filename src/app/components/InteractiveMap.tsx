@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, useMap, Polyline, Tooltip } from 'react-leaflet';
+import * as React from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, CircleMarker, useMap, useMapEvents, Polyline, Rectangle, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { useNavigate } from 'react-router';
 import {
@@ -14,7 +15,7 @@ import { AnalysisToolbar, LayerPanel, MatchPanel, REACH_OPTIONS } from './map/ov
 import type { ReachId } from './map/overlays';
 import { useApp } from '../context/AppContext';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 /* ─── Price pill markers ─── */
 function createPriceIcon(property: Property, isActive: boolean, isSaved = false): L.DivIcon {
@@ -27,9 +28,9 @@ function createPriceIcon(property: Property, isActive: boolean, isSaved = false)
       <div style="
         display:flex;align-items:center;justify-content:center;
         height:28px;padding:0 11px;border-radius:999px;
-        background:${isActive ? '#0C2B45' : '#ffffff'};
-        color:${isActive ? '#ffffff' : '#0C447C'};
-        border:1px solid ${isActive ? '#0C2B45' : 'rgba(12,68,124,0.12)'};
+        background:${isActive ? '#322F35' : '#ffffff'};
+        color:${isActive ? '#ffffff' : '#21005D'};
+        border:1px solid ${isActive ? '#322F35' : 'rgba(12,68,124,0.12)'};
         box-shadow:0 2px 6px rgba(12,68,124,0.22);
         font-family:${FONT};font-size:12px;font-weight:800;white-space:nowrap;
         transition:transform .15s ease;
@@ -43,12 +44,12 @@ function createPriceIcon(property: Property, isActive: boolean, isSaved = false)
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  available: '#00CC66',
-  under_negotiation: '#B26A00',
-  coming_soon: '#0C447C',
+  available: '#2E7D32',
+  under_negotiation: '#8C5000',
+  coming_soon: '#21005D',
 };
 
-const ACTIVE_COLOR = '#00C2B2';
+const ACTIVE_COLOR = '#6750A4';
 
 /* ─── Transit hub mock data (positioned near real US logistics hubs) ─── */
 const TRANSIT_HUBS = [
@@ -81,23 +82,85 @@ const LABOR_ZONES = [
   { lat: 29.76, lng: -95.37, score: 84, pop: '7.1M metro' },
 ];
 
-/* ─── Major interstate routes (simplified polylines across US) ─── */
+/* ─── Metro anchors, used to derive the additional data layers ─── */
+const METROS: [number, number][] = [
+  [41.85, -87.7], [40.75, -74.0], [34.05, -117.5], [32.78, -96.8],
+  [33.75, -84.4], [47.6, -122.3], [35.15, -90.0], [33.45, -112.0],
+  [32.08, -81.1], [39.74, -104.95], [29.76, -95.37],
+];
+const nudge = (base: [number, number][], dLat: number, dLng: number): [number, number][] =>
+  base.map(([la, ln]) => [la + dLat, ln + dLng]);
+
+/* Point-style additional layers (suppliers, stores, cold-chain). Parcel hubs
+   are derived from the visible properties instead, so they always sit on land. */
+const SUPPLIER_SITES = nudge(METROS, -0.19, 0.23);
+const COLD_SITES = nudge(METROS, 0.13, -0.22);
+const STORE_SITES: [number, number][] = METROS.flatMap(([la, ln]) => [
+  [la + 0.06, ln + 0.06], [la - 0.09, ln + 0.14], [la + 0.11, ln - 0.11],
+]);
+/* Heat-style additional layers. */
+const DEMAND_ZONES = METROS.map(([lat, lng], i) => ({ lat, lng, weight: [95, 100, 82, 86, 84, 78, 70, 74, 55, 72, 80][i] }));
+const RISK_ZONES = [ // coastal / flood-exposed metros
+  { lat: 40.75, lng: -74.0, kind: 'Coastal flood' },
+  { lat: 47.6, lng: -122.3, kind: 'Seismic' },
+  { lat: 32.08, lng: -81.1, kind: 'Hurricane' },
+  { lat: 29.76, lng: -95.37, kind: 'Hurricane / flood' },
+  { lat: 34.05, lng: -117.5, kind: 'Wildfire / seismic' },
+];
+
+/* ─── Major interstate routes (Transit-app style coloured lines across US) ─── */
 const HIGHWAY_ROUTES = [
   // I-10 (LA → Houston)
-  { name: 'I-10', points: [[34.0, -118.2], [33.45, -112.0], [32.2, -110.9], [31.8, -106.4], [29.75, -95.4]] as [number, number][] },
+  { name: 'I-10', color: '#EE6C4D', points: [[34.0, -118.2], [33.45, -112.0], [32.2, -110.9], [31.8, -106.4], [29.75, -95.4]] as [number, number][] },
   // I-95 (NJ → Savannah)
-  { name: 'I-95', points: [[40.8, -74.1], [40.6, -75.4], [39.3, -76.6], [37.5, -77.4], [35.8, -78.6], [33.8, -84.4], [32.1, -81.1]] as [number, number][] },
+  { name: 'I-95', color: '#1B7A8C', points: [[40.8, -74.1], [40.6, -75.4], [39.3, -76.6], [37.5, -77.4], [35.8, -78.6], [33.8, -84.4], [32.1, -81.1]] as [number, number][] },
   // I-40 (Memphis → IE)
-  { name: 'I-40', points: [[35.1, -90.0], [35.5, -97.5], [35.1, -106.6], [34.0, -117.4]] as [number, number][] },
+  { name: 'I-40', color: '#6750A4', points: [[35.1, -90.0], [35.5, -97.5], [35.1, -106.6], [34.0, -117.4]] as [number, number][] },
   // I-55 (Chicago → Memphis)
-  { name: 'I-55', points: [[41.8, -87.8], [39.8, -89.6], [37.2, -89.5], [35.1, -90.0]] as [number, number][] },
+  { name: 'I-55', color: '#E8963A', points: [[41.8, -87.8], [39.8, -89.6], [37.2, -89.5], [35.1, -90.0]] as [number, number][] },
   // I-5 (Seattle → IE)
-  { name: 'I-5', points: [[47.4, -122.3], [45.5, -122.7], [40.6, -122.4], [37.8, -122.4], [34.0, -118.2]] as [number, number][] },
+  { name: 'I-5', color: '#2E7D5B', points: [[47.4, -122.3], [45.5, -122.7], [40.6, -122.4], [37.8, -122.4], [34.0, -118.2]] as [number, number][] },
   // I-20 (Atlanta → Dallas)
-  { name: 'I-20', points: [[33.75, -84.4], [33.45, -86.8], [32.3, -90.2], [32.5, -93.7], [32.65, -96.85]] as [number, number][] },
+  { name: 'I-20', color: '#C74B78', points: [[33.75, -84.4], [33.45, -86.8], [32.3, -90.2], [32.5, -93.7], [32.65, -96.85]] as [number, number][] },
   // I-70 (Denver → midwest)
-  { name: 'I-70', points: [[39.77, -104.87], [39.1, -99.3], [39.0, -94.6], [38.9, -90.2], [39.8, -86.2]] as [number, number][] },
+  { name: 'I-70', color: '#3E6DB5', points: [[39.77, -104.87], [39.1, -99.3], [39.0, -94.6], [38.9, -90.2], [39.8, -86.2]] as [number, number][] },
 ];
+
+/* Labor-score badge — a solid chip so the zone reads clearly over busy tiles. */
+function createLaborBadge(score: number): L.DivIcon {
+  return L.divIcon({
+    className: 'labor-badge',
+    html: `
+      <div style="
+        display:flex;align-items:center;gap:3px;
+        height:22px;padding:0 8px;border-radius:999px;
+        background:#21005D;color:#ffffff;
+        border:1.5px solid #ffffff;
+        box-shadow:0 2px 6px rgba(12,68,124,0.3);
+        font-family:${FONT};font-size:10.5px;font-weight:800;white-space:nowrap;
+      ">
+        <span style="opacity:.7;font-weight:600;">Labor</span>${score}
+      </div>`,
+    iconSize: [56, 22],
+    iconAnchor: [28, 11],
+  });
+}
+
+/* Teardrop terminal pin — marks the end of a route, coloured per line. */
+function createRoutePin(color: string): L.DivIcon {
+  return L.divIcon({
+    className: 'route-pin',
+    html: `
+      <div style="
+        width:16px;height:16px;border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        background:#ffffff;border:3px solid ${color};
+        box-shadow:0 2px 5px rgba(0,0,0,0.25);
+      "></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 15],
+  });
+}
 
 /**
  * Leaflet projects against the container's pixel size, so any camera move made
@@ -120,8 +183,10 @@ function useMapReady() {
     };
 
     map.invalidateSize();
-    if (check()) return;
+    check();
 
+    // Always observe: the container also resizes when the side panel collapses,
+    // and Leaflet must re-invalidate to fill the newly-available width.
     const ro = new ResizeObserver(() => {
       map.invalidateSize();
       check();
@@ -193,6 +258,134 @@ function FlyToSelected({ property }: { property: Property | undefined }) {
 }
 
 
+/**
+ * Fetches real road-following geometry for each interstate route from the public
+ * OSRM demo API (keyless). Runs once when the layer is first enabled; until it
+ * resolves — or if the request fails — the render falls back to the static
+ * hand-drawn coordinates, so the map is always usable offline.
+ */
+function useRoadRoutes(enabled: boolean) {
+  const [roads, setRoads] = useState<Record<string, [number, number][]>>({});
+  const fetched = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || fetched.current) return;
+    fetched.current = true;
+    let cancelled = false;
+
+    (async () => {
+      const results: Record<string, [number, number][]> = {};
+      await Promise.all(
+        HIGHWAY_ROUTES.map(async (route, i) => {
+          // OSRM wants lng,lat pairs; our points are [lat, lng].
+          const coords = route.points.map(([la, ln]) => `${ln},${la}`).join(';');
+          const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+          try {
+            const json = await fetch(url).then(r => r.json());
+            const line = json?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+            if (Array.isArray(line)) {
+              results[`hw-${i}`] = line.map(([ln, la]) => [la, ln]);
+            }
+          } catch {
+            /* keep the static fallback for this route */
+          }
+        })
+      );
+      if (!cancelled) setRoads(results);
+    })();
+
+    return () => { cancelled = true; };
+  }, [enabled]);
+
+  return roads;
+}
+
+/* ─── Drive-time isochrone rings around the selected property ─── */
+const DRIVE_RINGS = [
+  { min: 15, radiusKm: 22, opacity: 0.14 },
+  { min: 30, radiusKm: 45, opacity: 0.10 },
+  { min: 45, radiusKm: 70, opacity: 0.06 },
+];
+
+function DriveTimeRings({ property }: { property: Property | undefined }) {
+  if (!property) return null;
+  const center: [number, number] = [property.map.lat, property.map.lng];
+  return (
+    <>
+      {[...DRIVE_RINGS].reverse().map(ring => (
+        <Circle
+          key={ring.min}
+          center={center}
+          radius={ring.radiusKm * 1000}
+          pathOptions={{
+            color: '#1B7A8C', fillColor: '#1B7A8C', fillOpacity: ring.opacity,
+            weight: 1.5, opacity: 0.6, dashArray: '6 5',
+          }}
+        >
+          <Tooltip direction="top" sticky>
+            <span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#1B7A8C' }}>
+              ~{ring.min} min drive
+            </span>
+          </Tooltip>
+        </Circle>
+      ))}
+    </>
+  );
+}
+
+/* ─── Draw-area rectangle tool ─── */
+function DrawAreaLayer({
+  active,
+  properties,
+  onCount,
+}: {
+  active: boolean;
+  properties: Property[];
+  onCount: (n: number | null) => void;
+}) {
+  const [corner1, setCorner1] = useState<[number, number] | null>(null);
+  const [corner2, setCorner2] = useState<[number, number] | null>(null);
+
+  const map = useMapEvents({
+    click(e) {
+      if (!active) return;
+      const pt: [number, number] = [e.latlng.lat, e.latlng.lng];
+      if (!corner1 || corner2) {
+        // No box yet, or a completed box — start a fresh one.
+        setCorner1(pt);
+        setCorner2(null);
+      } else {
+        // One corner down — this click sets the opposite corner.
+        setCorner2(pt);
+      }
+    },
+  });
+
+  // Reset the drawing whenever the tool is switched off; show a crosshair while on.
+  useEffect(() => {
+    const el = map.getContainer();
+    el.style.cursor = active ? 'crosshair' : '';
+    if (!active) { setCorner1(null); setCorner2(null); onCount(null); }
+    return () => { el.style.cursor = ''; };
+  }, [active, onCount, map]);
+
+  useEffect(() => {
+    if (corner1 && corner2) {
+      const bounds = L.latLngBounds(corner1, corner2);
+      const n = properties.filter(p => bounds.contains([p.map.lat, p.map.lng])).length;
+      onCount(n);
+    }
+  }, [corner1, corner2, properties, onCount]);
+
+  if (!corner1 || !corner2) return null;
+  return (
+    <Rectangle
+      bounds={L.latLngBounds(corner1, corner2)}
+      pathOptions={{ color: '#6750A4', weight: 2, fillColor: '#6750A4', fillOpacity: 0.08, dashArray: '6 4' }}
+    />
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN INTERACTIVE MAP COMPONENT
    ═══════════════════════════════════════════════════════════════ */
@@ -202,6 +395,9 @@ export function InteractiveMap({
   onSelectProperty,
   showControls = true,
   persona = defaultPersona,
+  overlayInsetLeft = 0,
+  filtersOpen,
+  onToggleFilters,
 }: {
   properties: Property[];
   selectedId: string | null;
@@ -210,10 +406,20 @@ export function InteractiveMap({
   showControls?: boolean;
   /** Drives which layers are recommended and how the match is explained. */
   persona?: Persona;
+  /** px the floating panels occupy on the left, so the map's own overlays clear them. */
+  overlayInsetLeft?: number;
+  /** Filters-panel open state + toggle, surfaced as a pill in the toolbar. */
+  filtersOpen?: boolean;
+  onToggleFilters?: () => void;
 }) {
   const navigate = useNavigate();
   const { toggleCompare, toggleSaved, isInCompare, isSaved } = useApp();
   const [reach, setReach] = useState<ReachId>('1h');
+  const [driveTime, setDriveTime] = useState(false);
+  const [drawArea, setDrawArea] = useState(false);
+  const [drawCount, setDrawCount] = useState<number | null>(null);
+  // Real road geometry from OSRM, fetched the first time Drive time is enabled.
+  const roadRoutes = useRoadRoutes(driveTime);
 
   // Persona presets pick the layers; manual choices hold until the persona changes.
   const [active, setActive] = useState<Set<LayerId>>(() => new Set(persona.recommended));
@@ -234,9 +440,15 @@ export function InteractiveMap({
 
   const overlays = {
     labor: active.has('labor'),
-    highway: active.has('highway'),
     transit: active.has('transit'),
     reach: active.has('reach'),
+    parcel: active.has('parcel'),
+    demand: active.has('demand'),
+    suppliers: active.has('suppliers'),
+    stores: active.has('stores'),
+    coldChain: active.has('coldChain'),
+    rent: active.has('rent'),
+    risk: active.has('risk'),
   };
   const reachOption = REACH_OPTIONS.find(r => r.id === reach)!;
 
@@ -251,76 +463,123 @@ export function InteractiveMap({
   }, []);
 
   return (
-    // Grid: map card top-left, Data Layers right column, match bar along the bottom.
+    // Full-bleed map with floating overlays that the panels overlap.
     <div
-      className="w-full h-full grid gap-3"
-      style={{
-        fontFamily: FONT,
-        gridTemplateColumns: showControls ? 'minmax(0,1fr) 236px' : '1fr',
-        gridTemplateRows: showControls && selectedProperty ? 'minmax(0,1fr) auto' : 'minmax(0,1fr)',
-      }}
+      className="relative isolate z-0 w-full h-full rounded-2xl overflow-hidden border border-[#E7E0EC] shadow-inner"
+      style={{ fontFamily: FONT }}
     >
-      {/* Map card. `isolate z-0` keeps Leaflet's panes in their own stacking context. */}
-      <div className="relative isolate z-0 min-h-0 min-w-0 rounded-2xl overflow-hidden border border-[#E6F1FB] shadow-inner">
       <MapContainer
         center={center}
         zoom={5}
         scrollWheelZoom
         zoomControl={false}
         className="w-full h-full"
-        style={{ background: '#E8EDE8' }}
+        style={{ background: '#E6E0E9' }}
       >
-        {/* Tile layer — Carto Voyager (clean, modern, muted) */}
+        {/* Tile layer — OpenStreetMap standard (keyless, no watermark) */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {/* Fit bounds */}
         <MapFitter properties={visibleProperties} selectedId={selectedId} />
         <FlyToSelected property={selectedProperty} />
 
-        {/* ─── DATA LAYER: Highway routes ─── */}
-        {overlays.highway && HIGHWAY_ROUTES.map((route, i) => (
-          <Polyline
-            key={`hw-${i}`}
-            positions={route.points}
-            pathOptions={{
-              color: '#1B4D4A',
-              weight: 2.5,
-              opacity: 0.3,
-              dashArray: '10 6',
-            }}
-          >
-            <Tooltip sticky>
-              <span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#1B4D4A' }}>{route.name}</span>
-            </Tooltip>
-          </Polyline>
-        ))}
+        {/* ─── Highway routes — shown together with the Drive-time toggle ─── */}
+        {driveTime && HIGHWAY_ROUTES.map((route, i) => {
+          const start = route.points[0];
+          const end = route.points[route.points.length - 1];
+          // Prefer real road geometry from OSRM; fall back to the static coords.
+          const positions = roadRoutes[`hw-${i}`] ?? route.points;
+          return (
+            <React.Fragment key={`hw-${i}`}>
+              {/* White casing underneath for the transit-line look */}
+              <Polyline
+                positions={positions}
+                pathOptions={{
+                  color: '#ffffff', weight: 8, opacity: 0.9,
+                  lineCap: 'round', lineJoin: 'round',
+                }}
+              />
+              {/* Coloured line on top with rounded joints */}
+              <Polyline
+                positions={positions}
+                pathOptions={{
+                  color: route.color, weight: 4.5, opacity: 0.95,
+                  lineCap: 'round', lineJoin: 'round',
+                }}
+              >
+                <Tooltip sticky>
+                  <span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: route.color }}>{route.name}</span>
+                </Tooltip>
+              </Polyline>
+              {/* Flowing dots travelling toward the destination */}
+              <Polyline
+                positions={positions}
+                interactive={false}
+                pathOptions={{
+                  className: 'route-flow',
+                  color: '#ffffff', weight: 2.5, opacity: 0.9,
+                  lineCap: 'round', dashArray: '0.1 16',
+                }}
+              />
+              {/* Stop dots at each bend */}
+              {route.points.slice(1, -1).map((pt, j) => (
+                <CircleMarker
+                  key={`hw-${i}-stop-${j}`}
+                  center={pt}
+                  radius={4}
+                  pathOptions={{
+                    color: route.color, fillColor: '#ffffff',
+                    fillOpacity: 1, weight: 2.5, opacity: 1,
+                  }}
+                />
+              ))}
+              {/* Origin dot */}
+              <CircleMarker
+                center={start}
+                radius={5.5}
+                pathOptions={{
+                  color: '#ffffff', fillColor: route.color,
+                  fillOpacity: 1, weight: 2, opacity: 1,
+                }}
+              />
+              {/* Destination pin */}
+              <Marker position={end} icon={createRoutePin(route.color)} />
+            </React.Fragment>
+          );
+        })}
 
         {/* ─── DATA LAYER: Labor pool density ─── */}
-        {overlays.labor && LABOR_ZONES.map((zone, i) => (
-          <Circle
-            key={`labor-${i}`}
-            center={snapToSelected(zone.lat, zone.lng, selectedProperty)}
-            radius={zone.score * 800}
-            pathOptions={{
-              color: '#00C2B2',
-              fillColor: '#00C2B2',
-              fillOpacity: 0.08 + (zone.score / 100) * 0.08,
-              weight: 1,
-              opacity: 0.25,
-            }}
-          >
-            <Tooltip>
-              <div style={{ fontFamily: FONT }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#0C447C' }}>Labor Pool Zone</div>
-                <div style={{ fontSize: 10, color: '#303234' }}>Score: <strong>{zone.score}/100</strong></div>
-                <div style={{ fontSize: 10, color: '#303234aa' }}>{zone.pop}</div>
-              </div>
-            </Tooltip>
-          </Circle>
-        ))}
+        {overlays.labor && LABOR_ZONES.map((zone, i) => {
+          const center = snapToSelected(zone.lat, zone.lng, selectedProperty);
+          return (
+            <React.Fragment key={`labor-${i}`}>
+              <Circle
+                center={center}
+                radius={zone.score * 800}
+                pathOptions={{
+                  color: '#6750A4',
+                  fillColor: '#6750A4',
+                  fillOpacity: 0.14 + (zone.score / 100) * 0.16,
+                  weight: 2,
+                  opacity: 0.85,
+                }}
+              >
+                <Tooltip>
+                  <div style={{ fontFamily: FONT }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#21005D' }}>Labor Pool Zone</div>
+                    <div style={{ fontSize: 10, color: '#1D1B20' }}>Score: <strong>{zone.score}/100</strong></div>
+                    <div style={{ fontSize: 10, color: '#1D1B20aa' }}>{zone.pop}</div>
+                  </div>
+                </Tooltip>
+              </Circle>
+              {/* Always-visible score badge at the zone centre */}
+              <Marker position={center} icon={createLaborBadge(zone.score)} interactive={false} />
+            </React.Fragment>
+          );
+        })}
 
         {/* ─── DATA LAYER: Transit hubs ─── */}
         {overlays.transit && TRANSIT_HUBS.map((hub, i) => (
@@ -329,8 +588,8 @@ export function InteractiveMap({
             center={snapToSelected(hub.lat, hub.lng, selectedProperty)}
             radius={7}
             pathOptions={{
-              color: '#0C447C',
-              fillColor: '#0C447C',
+              color: '#21005D',
+              fillColor: '#21005D',
               fillOpacity: 0.6,
               weight: 2,
               opacity: 0.8,
@@ -338,23 +597,118 @@ export function InteractiveMap({
           >
             <Tooltip>
               <div style={{ fontFamily: FONT }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#0C447C' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#21005D' }}>
                   <span style={{ marginRight: 4 }}>🚂</span>{hub.name}
                 </div>
-                <div style={{ fontSize: 10, color: '#303234aa' }}>Intermodal / Transit Hub</div>
+                <div style={{ fontSize: 10, color: '#1D1B20aa' }}>Intermodal / Transit Hub</div>
               </div>
             </Tooltip>
           </CircleMarker>
         ))}
 
+        {/* ─── DATA LAYER: Parcel sortation hubs (near each property, inland) ─── */}
+        {overlays.parcel && visibleProperties.map((p, i) => {
+          // Offset west/south of the property so the hub lands on land, not water.
+          const pt: [number, number] = [p.map.lat - 0.06, p.map.lng - 0.14];
+          return (
+            <CircleMarker key={`parcel-${p.id}-${i}`} center={pt} radius={6}
+              pathOptions={{ color: '#E8963A', fillColor: '#E8963A', fillOpacity: 0.6, weight: 2, opacity: 0.9 }}>
+              <Tooltip>
+                <div style={{ fontFamily: FONT }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8C5000' }}>Carrier sortation hub</div>
+                  <div style={{ fontSize: 10, color: '#1D1B20aa' }}>Serving {p.market}</div>
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
+
+        {/* ─── DATA LAYER: Supplier network ─── */}
+        {overlays.suppliers && SUPPLIER_SITES.map((pt, i) => (
+          <CircleMarker key={`supp-${i}`} center={pt} radius={5.5}
+            pathOptions={{ color: '#2E7D5B', fillColor: '#2E7D5B', fillOpacity: 0.5, weight: 2, opacity: 0.85 }}>
+            <Tooltip><span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#2E7D5B' }}>🏭 Upstream supplier</span></Tooltip>
+          </CircleMarker>
+        ))}
+
+        {/* ─── DATA LAYER: Store network ─── */}
+        {overlays.stores && STORE_SITES.map((pt, i) => (
+          <CircleMarker key={`store-${i}`} center={pt} radius={4}
+            pathOptions={{ color: '#3E6DB5', fillColor: '#ffffff', fillOpacity: 1, weight: 2.5, opacity: 0.9 }}>
+            <Tooltip><span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#3E6DB5' }}>🏬 Retail location</span></Tooltip>
+          </CircleMarker>
+        ))}
+
+        {/* ─── DATA LAYER: Cold-chain network ─── */}
+        {overlays.coldChain && COLD_SITES.map((pt, i) => (
+          <CircleMarker key={`cold-${i}`} center={pt} radius={6}
+            pathOptions={{ color: '#1B7A8C', fillColor: '#1B7A8C', fillOpacity: 0.5, weight: 2, opacity: 0.85 }}>
+            <Tooltip><span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#1B7A8C' }}>❄️ Reefer / cold facility</span></Tooltip>
+          </CircleMarker>
+        ))}
+
+        {/* ─── DATA LAYER: Customer demand heatmap ─── */}
+        {overlays.demand && DEMAND_ZONES.map((z, i) => (
+          <Circle key={`demand-${i}`} center={[z.lat, z.lng]} radius={z.weight * 900}
+            pathOptions={{ color: '#C74B78', fillColor: '#C74B78', fillOpacity: 0.05 + (z.weight / 100) * 0.14, weight: 0, opacity: 0 }}>
+            <Tooltip><div style={{ fontFamily: FONT }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#C74B78' }}>Consumer demand</div>
+              <div style={{ fontSize: 10, color: '#1D1B20aa' }}>Index {z.weight}/100</div>
+            </div></Tooltip>
+          </Circle>
+        ))}
+
+        {/* ─── DATA LAYER: Asking-rent heatmap (per property) ─── */}
+        {overlays.rent && visibleProperties.filter(p => p.rentPsf != null).map(p => {
+          const psf = p.rentPsf as number;
+          const t = Math.min(1, Math.max(0, (psf - 5) / 8)); // 5→13 $/SF
+          return (
+            <Circle key={`rent-${p.id}`} center={[p.map.lat, p.map.lng]} radius={28000}
+              pathOptions={{ color: '#B3261E', fillColor: '#B3261E', fillOpacity: 0.08 + t * 0.28, weight: 0, opacity: 0 }}>
+              <Tooltip><span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, color: '#B3261E' }}>${psf}/SF asking</span></Tooltip>
+            </Circle>
+          );
+        })}
+
+        {/* ─── DATA LAYER: Outage & flood risk ─── */}
+        {overlays.risk && RISK_ZONES.map((z, i) => (
+          <Circle key={`risk-${i}`} center={[z.lat, z.lng]} radius={55000}
+            pathOptions={{ color: '#8C5000', fillColor: '#8C5000', fillOpacity: 0.1, weight: 1.5, opacity: 0.4, dashArray: '5 5' }}>
+            <Tooltip><div style={{ fontFamily: FONT }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#8C5000' }}>⚠️ Hazard exposure</div>
+              <div style={{ fontSize: 10, color: '#1D1B20aa' }}>{z.kind}</div>
+            </div></Tooltip>
+          </Circle>
+        ))}
+
+        {/* ─── Drive-time isochrone rings (toolbar toggle) ─── */}
+        {driveTime && <DriveTimeRings property={selectedProperty} />}
+
+        {/* ─── Draw-area rectangle tool (toolbar toggle) ─── */}
+        <DrawAreaLayer active={drawArea} properties={visibleProperties} onCount={setDrawCount} />
+
         {/* ─── Delivery reach for the selected property (spec §7.1) ─── */}
         {overlays.reach && selectedProperty && (
           <>
+            {/* Radar ripples — glow outward from the centre, staggered */}
+            {[0, 1, 2].map(k => (
+              <Circle
+                key={`reach-pulse-${selectedProperty.id}-${k}`}
+                center={[selectedProperty.map.lat, selectedProperty.map.lng]}
+                radius={reachOption.radiusKm * 1000}
+                interactive={false}
+                pathOptions={{
+                  className: `reach-pulse reach-pulse-${k}`,
+                  color: 'transparent', fillColor: '#6750A4',
+                  fillOpacity: 0.28, weight: 0, opacity: 0,
+                }}
+              />
+            ))}
             <Circle
               center={[selectedProperty.map.lat, selectedProperty.map.lng]}
               radius={reachOption.radiusKm * 1000}
               pathOptions={{
-                color: '#00C2B2', fillColor: '#00C2B2', fillOpacity: 0.06,
+                color: '#6750A4', fillColor: '#6750A4', fillOpacity: 0.06,
                 weight: 2, dashArray: '8 4', opacity: 0.5,
               }}
             />
@@ -362,7 +716,7 @@ export function InteractiveMap({
               center={[selectedProperty.map.lat, selectedProperty.map.lng]}
               radius={reachOption.radiusKm * 620}
               pathOptions={{
-                color: '#00C2B2', fillColor: '#00C2B2', fillOpacity: 0.04,
+                color: '#6750A4', fillColor: '#6750A4', fillOpacity: 0.04,
                 weight: 1, opacity: 0.3,
               }}
             />
@@ -392,7 +746,7 @@ export function InteractiveMap({
               >
                 <div style={{ fontFamily: FONT, width: 300 }}>
                   {/* Photograph with the close and save affordances over it */}
-                  <div style={{ position: 'relative', height: 170, background: '#E6F1FB' }}>
+                  <div style={{ position: 'relative', height: 170, background: '#E7E0EC' }}>
                     <img
                       src={p.images[0]}
                       alt={p.name}
@@ -403,11 +757,11 @@ export function InteractiveMap({
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '3px 9px', borderRadius: 999,
                       background: 'rgba(255,255,255,0.95)',
-                      fontSize: 10, fontWeight: 700, color: '#0C447C',
+                      fontSize: 10, fontWeight: 700, color: '#21005D',
                     }}>
                       <span style={{
                         width: 6, height: 6, borderRadius: 999,
-                        background: STATUS_COLORS[p.availabilityStatus] || '#0C447C',
+                        background: STATUS_COLORS[p.availabilityStatus] || '#21005D',
                       }} />
                       {getStatusLabel(p.availabilityStatus)}
                     </span>
@@ -416,31 +770,31 @@ export function InteractiveMap({
                   {/* Summary line, then the figures that decide the shortlist */}
                   <div style={{ padding: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0C447C' }}>{p.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#1B4D4A', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: '#21005D' }}>{p.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#6750A4', whiteSpace: 'nowrap' }}>
                         {p.locationSignals.laborPoolScore}/100
-                        <span style={{ color: '#303234aa', fontWeight: 500 }}> labor</span>
+                        <span style={{ color: '#1D1B20aa', fontWeight: 500 }}> labor</span>
                       </span>
                     </div>
 
-                    <div style={{ fontSize: 11.5, color: '#303234aa', marginTop: 2 }}>
+                    <div style={{ fontSize: 11.5, color: '#1D1B20aa', marginTop: 2 }}>
                       {p.market}, {p.submarket}
                     </div>
 
-                    <div style={{ fontSize: 11.5, color: '#303234aa', marginTop: 6 }}>
+                    <div style={{ fontSize: 11.5, color: '#1D1B20aa', marginTop: 6 }}>
                       {p.sizeSqft.toLocaleString()} SF · {p.clearHeightFt}&#39; clear · {p.dockDoors} docks
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#0C447C' }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#21005D' }}>
                         {p.rentPsf ? `$${p.rentPsf}/SF` : 'Pricing on request'}
-                        {p.rentPsf && <span style={{ fontSize: 11, fontWeight: 500, color: '#303234aa' }}> per year</span>}
+                        {p.rentPsf && <span style={{ fontSize: 11, fontWeight: 500, color: '#1D1B20aa' }}> per year</span>}
                       </span>
                       <button
                         onClick={() => navigate(`/property/${p.id}`)}
                         style={{
                           padding: '6px 12px', borderRadius: 10,
-                          background: '#1B4D4A', color: 'white',
+                          background: '#6750A4', color: 'white',
                           fontSize: 11, fontWeight: 700, border: 'none',
                           cursor: 'pointer', fontFamily: FONT,
                         }}
@@ -456,14 +810,27 @@ export function InteractiveMap({
         })}
       </MapContainer>
 
-      {/* Only the analysis toolbar floats on the map; the panels sit in the grid. */}
-      {showControls && <AnalysisToolbar reach={reach} onReachChange={setReach} />}
+      {/* Analysis toolbar floats top-left, clearing any panels docked on the left. */}
+      {showControls && (
+        <AnalysisToolbar
+          reach={reach}
+          onReachChange={setReach}
+          insetLeft={overlayInsetLeft}
+          filtersOpen={filtersOpen}
+          onToggleFilters={onToggleFilters}
+          driveTime={driveTime}
+          onDriveTimeToggle={() => setDriveTime(v => !v)}
+          drawArea={drawArea}
+          onDrawAreaToggle={() => setDrawArea(v => !v)}
+          drawCount={drawCount}
+        />
+      )}
 
       {/* Inline styles for Leaflet popup override & marker animation */}
       <style>{`
         .prologis-popup .leaflet-popup-content-wrapper {
           border-radius: 16px !important;
-          border: 2px solid #00C2B220 !important;
+          border: 2px solid #6750A420 !important;
           box-shadow: 0 12px 40px rgba(27,77,74,0.15) !important;
           padding: 0 !important;
         }
@@ -474,7 +841,9 @@ export function InteractiveMap({
         .prologis-popup .leaflet-popup-content-wrapper {
           overflow: hidden !important;
         }
-        .price-marker {
+        .price-marker,
+        .labor-badge,
+        .route-pin {
           background: none !important;
           border: none !important;
         }
@@ -493,26 +862,52 @@ export function InteractiveMap({
         .leaflet-container {
           font-family: ${FONT};
         }
+        /* Delivery-reach ripple: glow outward from the centre, then fade */
+        .reach-pulse {
+          transform-box: fill-box;
+          transform-origin: center;
+          will-change: transform, opacity;
+        }
+        @keyframes reachPulse {
+          0%   { transform: scale(0.04); opacity: 0.5; }
+          70%  { opacity: 0.12; }
+          100% { transform: scale(1); opacity: 0; }
+        }
+        .reach-pulse-0 { animation: reachPulse 3s cubic-bezier(0.25,0.6,0.3,1) infinite; }
+        .reach-pulse-1 { animation: reachPulse 3s cubic-bezier(0.25,0.6,0.3,1) infinite 1s; }
+        .reach-pulse-2 { animation: reachPulse 3s cubic-bezier(0.25,0.6,0.3,1) infinite 2s; }
+        @media (prefers-reduced-motion: reduce) {
+          .reach-pulse { animation: none !important; opacity: 0 !important; }
+        }
+        /* Dots flowing along each route toward the destination */
+        @keyframes routeFlow {
+          to { stroke-dashoffset: -160; }
+        }
+        .route-flow {
+          animation: routeFlow 2.4s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .route-flow { animation: none; }
+        }
         .leaflet-tooltip {
           font-family: ${FONT} !important;
           border-radius: 10px !important;
-          border: 1px solid #E6F1FB !important;
+          border: 1px solid #E7E0EC !important;
           box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
           padding: 6px 10px !important;
         }
       `}</style>
-      </div>
 
-      {/* Data Layers — right column card */}
+      {/* Data Layers — collapsible, bottom-right */}
       {showControls && (
-        <div className="min-h-0" style={{ gridColumn: 2, gridRow: 1 }}>
+        <div className="absolute bottom-4 right-4 z-[500] flex justify-end">
           <LayerPanel persona={persona} active={active} onToggle={toggleLayer} />
         </div>
       )}
 
-      {/* Why this location fits — full-width bar below the map */}
+      {/* Why this location fits — collapsible, bottom-left */}
       {showControls && selectedProperty && (
-        <div className="min-w-0" style={{ gridColumn: '1 / -1', gridRow: 2 }}>
+        <div className="absolute bottom-4 z-[500]" style={{ left: overlayInsetLeft + 16 }}>
           <MatchPanel
             persona={persona}
             property={selectedProperty}

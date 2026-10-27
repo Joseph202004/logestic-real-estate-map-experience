@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import type { ActiveChip } from './types';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 /** Labelled range input used by the size and spec categories. */
 export function FilterSlider({
@@ -17,11 +17,11 @@ export function FilterSlider({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="flex items-center gap-1.5 text-[#303234]/70" style={{ fontSize: 11, fontWeight: 600 }}>
-          <Icon size={12} className="text-[#1B4D4A]" />
+        <span className="flex items-center gap-1.5 text-[#1D1B20]/70" style={{ fontSize: 11, fontWeight: 600 }}>
+          <Icon size={12} className="text-[#6750A4]" />
           {label}
         </span>
-        <span className="text-[#0C447C]" style={{ fontSize: 12, fontWeight: 800 }}>
+        <span className="text-[#21005D]" style={{ fontSize: 12, fontWeight: 800 }}>
           {value > min ? (format ? format(value) : `${value.toLocaleString()}+`) : 'Any'}
         </span>
       </div>
@@ -29,12 +29,12 @@ export function FilterSlider({
         type="range"
         min={min} max={max} step={step} value={value}
         onChange={e => onChange(+e.target.value)}
-        className="w-full h-1.5 bg-[#E6F1FB] rounded-full appearance-none cursor-pointer
+        className="w-full h-1.5 bg-[#E7E0EC] rounded-full appearance-none cursor-pointer
           [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-          [&::-webkit-slider-thumb]:bg-[#1B4D4A] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md
+          [&::-webkit-slider-thumb]:bg-[#6750A4] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md
           [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
       />
-      <div className="flex justify-between mt-1 text-[#303234]/35" style={{ fontSize: 9, fontWeight: 600 }}>
+      <div className="flex justify-between mt-1 text-[#1D1B20]/35" style={{ fontSize: 9, fontWeight: 600 }}>
         <span>Any</span>
         <span>{format ? format(max) : max.toLocaleString()}</span>
       </div>
@@ -60,31 +60,31 @@ export function OptionRow({
       className={`
         w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all text-left
         ${active
-          ? 'bg-[#00C2B2]/8 border-[#00C2B2]'
-          : 'bg-white border-[#E6F1FB] hover:border-[#00C2B2]/40'
+          ? 'bg-[#6750A4]/8 border-[#6750A4]'
+          : 'bg-white border-[#E7E0EC] hover:border-[#6750A4]/40'
         }
       `}
       style={{ fontFamily: FONT }}
     >
       {dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />}
-      {Icon && <Icon size={14} className={active ? 'text-[#00C2B2]' : 'text-[#303234]/35'} />}
+      {Icon && <Icon size={14} className={active ? 'text-[#6750A4]' : 'text-[#1D1B20]/35'} />}
 
       <span className="min-w-0 flex-1">
-        <span className={`block truncate ${active ? 'text-[#1B4D4A]' : 'text-[#303234]/70'}`} style={{ fontSize: 12, fontWeight: 700 }}>
+        <span className={`block truncate ${active ? 'text-[#6750A4]' : 'text-[#1D1B20]/70'}`} style={{ fontSize: 12, fontWeight: 700 }}>
           {label}
         </span>
         {hint && (
-          <span className="block text-[#303234]/40" style={{ fontSize: 10, fontWeight: 500 }}>{hint}</span>
+          <span className="block text-[#1D1B20]/40" style={{ fontSize: 10, fontWeight: 500 }}>{hint}</span>
         )}
       </span>
 
       {variant === 'switch' ? (
-        <span className={`w-8 h-[18px] rounded-full flex items-center px-0.5 shrink-0 transition-colors ${active ? 'bg-[#00C2B2] justify-end' : 'bg-[#E6F1FB] justify-start'}`}>
+        <span className={`w-8 h-[18px] rounded-full flex items-center px-0.5 shrink-0 transition-colors ${active ? 'bg-[#6750A4] justify-end' : 'bg-[#E7E0EC] justify-start'}`}>
           <span className="w-3.5 h-3.5 rounded-full bg-white shadow-sm" />
         </span>
       ) : (
-        <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${active ? 'border-[#00C2B2]' : 'border-[#E6F1FB]'}`}>
-          {active && <span className="w-2 h-2 rounded-full bg-[#00C2B2]" />}
+        <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${active ? 'border-[#6750A4]' : 'border-[#E7E0EC]'}`}>
+          {active && <span className="w-2 h-2 rounded-full bg-[#6750A4]" />}
         </span>
       )}
     </button>
@@ -109,9 +109,9 @@ export function ChipPill({
   return (
     <span
       className={`
-        inline-flex items-center gap-1 pl-2 pr-1 bg-[#E6F1FB] text-[#0C447C] rounded-full leading-none
+        inline-flex items-center gap-1 pl-2 pr-1 bg-[#E7E0EC] text-[#21005D] rounded-full leading-none
         ${compact ? 'h-[17px]' : 'h-[19px]'}
-        ${onEdit ? 'hover:bg-[#00C2B2]/15 transition-colors' : ''}
+        ${onEdit ? 'hover:bg-[#6750A4]/15 transition-colors' : ''}
       `}
       style={{ fontSize: size, fontWeight: 700, fontFamily: FONT }}
     >

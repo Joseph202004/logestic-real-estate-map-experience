@@ -5,28 +5,28 @@
 :root {
   --font-size: 16px;
   --background: #ffffff;
-  --foreground: #303234;
+  --foreground: #1D1B20;
   --card: #ffffff;
-  --card-foreground: #303234;
+  --card-foreground: #1D1B20;
   --popover: #ffffff;
-  --popover-foreground: #303234;
-  --primary: #1B4D4A;
+  --popover-foreground: #1D1B20;
+  --primary: #6750A4;
   --primary-foreground: #ffffff;
-  --secondary: #E6F1FB;
-  --secondary-foreground: #0C447C;
-  --muted: #F5F7FA;
-  --muted-foreground: #4C5A67;
-  --accent: #E6F1FB;
-  --accent-foreground: #0C447C;
-  --destructive: #B42318;
+  --secondary: #E7E0EC;
+  --secondary-foreground: #21005D;
+  --muted: #F7F2FA;
+  --muted-foreground: #49454F;
+  --accent: #E7E0EC;
+  --accent-foreground: #21005D;
+  --destructive: #B3261E;
   --destructive-foreground: #ffffff;
-  --border: #D3BBA1;
+  --border: #CAC4D0;
   --input: transparent;
-  --input-background: #F5F7FA;
-  --switch-background: #cbced4;
+  --input-background: #F7F2FA;
+  --switch-background: #CAC4D0;
   --font-weight-medium: 600;
   --font-weight-normal: 400;
-  --ring: #00C2B2;
+  --ring: #6750A4;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -35,7 +35,7 @@
   --radius: 1rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
+  --sidebar-primary: #1D1B20;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -128,6 +128,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Google Sans", "Figtree", Roboto, system-ui, sans-serif;
   }
 
   /**
@@ -180,4 +181,22 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* ── Material-style staggered reveal (used by the inline filter panel) ── */
+@keyframes mdFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.md-reveal > * {
+  animation: mdFadeUp 0.4s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+.md-reveal > *:nth-child(1) { animation-delay: 0.03s; }
+.md-reveal > *:nth-child(2) { animation-delay: 0.08s; }
+.md-reveal > *:nth-child(3) { animation-delay: 0.13s; }
+.md-reveal > *:nth-child(4) { animation-delay: 0.18s; }
+.md-reveal > *:nth-child(5) { animation-delay: 0.23s; }
+.md-reveal > *:nth-child(6) { animation-delay: 0.28s; }
+@media (prefers-reduced-motion: reduce) {
+  .md-reveal > * { animation: none; }
 }

@@ -3,7 +3,7 @@ import { Search, GitCompareArrows, Bookmark, Menu, X, ChevronRight } from 'lucid
 import { useApp } from '../context/AppContext';
 import { useState } from 'react';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
 export function TopNav() {
   const { compareList, savedProperties } = useApp();
@@ -15,14 +15,14 @@ export function TopNav() {
 
   return (
     <nav
-      className="sticky top-0 z-50 bg-[#1B4D4A]"
+      className="sticky top-0 z-50 bg-[#6750A4]"
       style={{ fontFamily: FONT }}
     >
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 flex items-center justify-between h-[60px]">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-[#1B4D4A]" style={{ fontWeight: 800, fontSize: 15, lineHeight: 1 }}>P</span>
+            <span className="text-[#6750A4]" style={{ fontWeight: 800, fontSize: 15, lineHeight: 1 }}>P</span>
           </div>
           <span className="text-white tracking-[0.08em]" style={{ fontWeight: 700, fontSize: 16 }}>PROLOGIS</span>
         </Link>
@@ -54,7 +54,7 @@ export function TopNav() {
             <GitCompareArrows size={15} />
             Compare
             {compareList.length > 0 && (
-              <span className="ml-0.5 w-5 h-5 bg-[#00C2B2] text-white rounded-full flex items-center justify-center shadow-sm" style={{ fontSize: 10, fontWeight: 800 }}>
+              <span className="ml-0.5 w-5 h-5 bg-[#6750A4] text-white rounded-full flex items-center justify-center shadow-sm" style={{ fontSize: 10, fontWeight: 800 }}>
                 {compareList.length}
               </span>
             )}
@@ -72,7 +72,7 @@ export function TopNav() {
             <Bookmark size={15} />
             Saved
             {savedProperties.length > 0 && (
-              <span className="ml-0.5 w-5 h-5 bg-[#00C2B2] text-white rounded-full flex items-center justify-center shadow-sm" style={{ fontSize: 10, fontWeight: 800 }}>
+              <span className="ml-0.5 w-5 h-5 bg-[#6750A4] text-white rounded-full flex items-center justify-center shadow-sm" style={{ fontSize: 10, fontWeight: 800 }}>
                 {savedProperties.length}
               </span>
             )}
@@ -96,20 +96,20 @@ export function TopNav() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#163F3D] border-t border-white/10 px-4 pb-5 pt-2 flex flex-col gap-1">
+        <div className="md:hidden bg-[#21005D] border-t border-white/10 px-4 pb-5 pt-2 flex flex-col gap-1">
           <Link to="/search" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-white/80 border-b border-white/5" style={{ fontSize: 14, fontWeight: 600 }}>
             <span className="flex items-center gap-2"><Search size={15} /> Search Properties</span>
             <ChevronRight size={14} />
           </Link>
           <Link to="/compare" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-white/80 border-b border-white/5" style={{ fontSize: 14, fontWeight: 600 }}>
             <span className="flex items-center gap-2"><GitCompareArrows size={15} /> Compare</span>
-            {compareList.length > 0 && <span className="px-2 py-0.5 bg-[#00C2B2] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{compareList.length}</span>}
+            {compareList.length > 0 && <span className="px-2 py-0.5 bg-[#6750A4] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{compareList.length}</span>}
           </Link>
           <Link to="/saved" onClick={() => setMobileOpen(false)} className="flex items-center justify-between py-3 text-white/80 border-b border-white/5 w-full text-left" style={{ fontSize: 14, fontWeight: 600 }}>
             <span className="flex items-center gap-2"><Bookmark size={15} /> Saved</span>
-            {savedProperties.length > 0 && <span className="px-2 py-0.5 bg-[#00C2B2] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{savedProperties.length}</span>}
+            {savedProperties.length > 0 && <span className="px-2 py-0.5 bg-[#6750A4] rounded-full text-white" style={{ fontSize: 11, fontWeight: 700 }}>{savedProperties.length}</span>}
           </Link>
-          <button className="mt-3 w-full py-2.5 bg-white text-[#1B4D4A] rounded-xl" style={{ fontSize: 13, fontWeight: 700 }}>
+          <button className="mt-3 w-full py-2.5 bg-white text-[#6750A4] rounded-xl" style={{ fontSize: 13, fontWeight: 700 }}>
             Sign In
           </button>
         </div>

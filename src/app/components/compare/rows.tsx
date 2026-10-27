@@ -19,11 +19,11 @@ export interface CompareGroup {
   rows: CompareRow[];
 }
 
-const muted = (text: string) => <span className="text-[#303234]/30">{text}</span>;
+const muted = (text: string) => <span className="text-[#1D1B20]/30">{text}</span>;
 const strong = (text: string) => <span style={{ fontWeight: 800 }}>{text}</span>;
 
 const yesNo = (on: boolean) =>
-  on ? <span className="text-[#00CC66]" style={{ fontWeight: 700 }}>Yes</span> : muted('No');
+  on ? <span className="text-[#2E7D32]" style={{ fontWeight: 700 }}>Yes</span> : muted('No');
 
 export const compareGroups: CompareGroup[] = [
   {
@@ -87,9 +87,9 @@ export const compareGroups: CompareGroup[] = [
         render: p => (
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${
-              p.availabilityStatus === 'available' ? 'bg-[#00CC66] text-white'
-                : p.availabilityStatus === 'under_negotiation' ? 'bg-[#B26A00] text-white'
-                : 'bg-[#0C447C] text-white'
+              p.availabilityStatus === 'available' ? 'bg-[#2E7D32] text-white'
+                : p.availabilityStatus === 'under_negotiation' ? 'bg-[#8C5000] text-white'
+                : 'bg-[#21005D] text-white'
             }`}
             style={{ fontSize: 9, fontWeight: 700 }}
           >
@@ -108,7 +108,7 @@ export const compareGroups: CompareGroup[] = [
         label: 'Indicative rent',
         hint: 'Lower is better',
         render: p => (p.rentPsf
-          ? <span className="text-[#00CC66]" style={{ fontWeight: 800, fontSize: 14 }}>${p.rentPsf}/SF</span>
+          ? <span className="text-[#2E7D32]" style={{ fontWeight: 800, fontSize: 14 }}>${p.rentPsf}/SF</span>
           : muted('On request')),
         best: p => (p.rentPsf ? -p.rentPsf : null),
       },
@@ -131,7 +131,7 @@ export const compareGroups: CompareGroup[] = [
         render: p => (
           <div className="flex flex-wrap gap-1">
             {getEssentialsList(p.essentials).map(e => (
-              <span key={e} className="px-1.5 py-0.5 bg-[#E6F1FB] text-[#0C447C] rounded" style={{ fontSize: 9, fontWeight: 700 }}>
+              <span key={e} className="px-1.5 py-0.5 bg-[#E7E0EC] text-[#21005D] rounded" style={{ fontSize: 9, fontWeight: 700 }}>
                 {e}
               </span>
             ))}
@@ -142,17 +142,17 @@ export const compareGroups: CompareGroup[] = [
       {
         label: 'Certification',
         render: p => (p.sustainability.certification
-          ? <span className="text-[#00CC66]" style={{ fontWeight: 700 }}>{p.sustainability.certification}</span>
+          ? <span className="text-[#2E7D32]" style={{ fontWeight: 700 }}>{p.sustainability.certification}</span>
           : muted('None')),
       },
       {
         label: 'Carbon score',
-        render: p => <ScoreBar value={p.sustainability.carbonScore} color="#00CC66" />,
+        render: p => <ScoreBar value={p.sustainability.carbonScore} color="#2E7D32" />,
         best: p => p.sustainability.carbonScore,
       },
       {
         label: 'Energy score',
-        render: p => <ScoreBar value={p.sustainability.energyScore} color="#00C2B2" />,
+        render: p => <ScoreBar value={p.sustainability.energyScore} color="#6750A4" />,
         best: p => p.sustainability.energyScore,
       },
     ],
@@ -162,10 +162,10 @@ export const compareGroups: CompareGroup[] = [
 function ScoreBar({ value, color }: { value: number; color: string }) {
   return (
     <div className="flex items-center gap-2 max-w-[160px]">
-      <div className="flex-1 h-1.5 bg-[#F4F3F3] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#FEF7FF] rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[#0C447C]" style={{ fontSize: 10.5, fontWeight: 800 }}>{value}</span>
+      <span className="text-[#21005D]" style={{ fontSize: 10.5, fontWeight: 800 }}>{value}</span>
     </div>
   );
 }

@@ -1,2 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+/* Google Sans (Material's UI font) is not on Google Fonts; Figtree is the closest
+   free geometric match. Google Sans is named first so it is used where licensed. */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&family=Roboto:wght@400;500;700&display=swap');
 @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');

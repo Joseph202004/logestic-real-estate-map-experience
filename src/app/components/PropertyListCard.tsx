@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {
-  ArrowUpRight, Bookmark, GitCompareArrows, MapPin, MoreVertical, Truck,
-} from 'lucide-react';
+import { ArrowUpRight, GitCompareArrows, Heart, Star } from 'lucide-react';
 import { getStatusLabel } from '../data/properties';
 import type { Property } from '../data/properties';
 import { useApp } from '../context/AppContext';
@@ -9,17 +7,18 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { matchScore } from '../personas/personas';
 import type { Persona } from '../personas/personas';
 
-const FONT = 'Montserrat, sans-serif';
+const FONT = '"Google Sans", Figtree, Roboto, sans-serif';
 
-const STATUS_STYLE: Record<Property['availabilityStatus'], string> = {
-  available: 'bg-[#00CC66]/12 text-[#00994D]',
-  under_negotiation: 'bg-[#B26A00]/12 text-[#B26A00]',
-  coming_soon: 'bg-[#0C447C]/10 text-[#0C447C]',
+const STATUS_COLOR: Record<Property['availabilityStatus'], string> = {
+  available: '#146C2E',
+  under_negotiation: '#8C5000',
+  coming_soon: '#21005D',
 };
 
 /**
- * Compact consignment-style row used in the results column: reference number,
- * status pill, an origin→destination rail, then the figures and actions.
+ * Listing card in the reference's photo-first style: a large image with a save
+ * heart, then title + rating, spec line, availability and price. Kept on the M3
+ * design system (Google Sans, M3 color roles, pill actions, tonal chips).
  */
 export function PropertyListCard({
   property,
@@ -37,6 +36,8 @@ export function PropertyListCard({
   const { toggleCompare, toggleSaved, isInCompare, isSaved } = useApp();
   const cardRef = useRef<HTMLDivElement>(null);
   const score = matchScore(persona, property);
+  const saved = isSaved(property.id);
+  const availableFrom = new Date(property.availableFrom).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
   useEffect(() => {
     if (isSelected && cardRef.current) {
@@ -49,122 +50,92 @@ export function PropertyListCard({
       ref={cardRef}
       onClick={() => onSelect(property.id)}
       className={`
-        bg-white rounded-2xl border cursor-pointer transition-all
+        group bg-white rounded-[20px] border p-2.5 cursor-pointer transition-all
         ${isSelected
-          ? 'border-[#00C2B2] shadow-[0_0_0_3px_rgba(0,194,178,0.12)]'
-          : 'border-[#E6F1FB] hover:border-[#00C2B2]/40'
+          ? 'border-[#6750A4] shadow-[0_1px_2px_rgba(0,0,0,0.06),0_10px_28px_rgba(103,80,164,0.14)]'
+          : 'border-[#E7E0EC] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:border-[#CAC4D0]'
         }
       `}
       style={{ fontFamily: FONT }}
     >
-      {/* Reference line */}
-      <div className="flex items-center gap-2 px-3.5 pt-3">
-        <span className="w-7 h-7 rounded-lg bg-[#F4F8FC] flex items-center justify-center shrink-0">
-          <Truck size={13} className="text-[#0C447C]" />
-        </span>
-        <span className="text-[#0C447C] truncate" style={{ fontSize: 12.5, fontWeight: 800 }}>
-          {property.name}
-        </span>
+      {/* Photo */}
+      <div className="relative rounded-2xl overflow-hidden bg-[#E8DEF8] aspect-[4/3]">
+        <ImageWithFallback
+          src={property.images[0]}
+          alt={property.name}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+        />
+
+        {/* Status chip */}
         <span
-          className={`ml-auto shrink-0 px-2 py-0.5 rounded-md ${STATUS_STYLE[property.availabilityStatus]}`}
-          style={{ fontSize: 9.5, fontWeight: 700 }}
+          className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 pl-2 pr-2.5 h-[24px] rounded-full bg-white/95 backdrop-blur-sm"
+          style={{ fontSize: 10, fontWeight: 700, color: STATUS_COLOR[property.availabilityStatus] }}
         >
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_COLOR[property.availabilityStatus] }} />
           {getStatusLabel(property.availabilityStatus)}
         </span>
-        <button
-          onClick={e => { e.stopPropagation(); onViewDetails(property.id); }}
-          className="shrink-0 text-[#303234]/30 hover:text-[#0C447C] transition-colors"
-          aria-label={`Open ${property.name}`}
-        >
-          <MoreVertical size={14} />
-        </button>
-      </div>
 
-      {/* Origin → corridor rail */}
-      <div className="px-3.5 pt-3">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#00CC66] shrink-0" />
-          <span className="flex-1 h-px bg-gradient-to-r from-[#00CC66]/50 to-[#E6F1FB]" />
-          <Truck size={12} className="text-[#0C447C]/50 shrink-0" />
-          <span className="flex-1 h-px bg-[#E6F1FB]" />
-          <span className="w-2 h-2 rounded-full bg-[#0C447C]/30 shrink-0" />
-        </div>
-
-        <div className="flex items-start justify-between gap-3 mt-1.5">
-          <div className="min-w-0">
-            <div className="text-[#303234]/70 flex items-center gap-1 truncate" style={{ fontSize: 10.5, fontWeight: 600 }}>
-              <MapPin size={9} className="shrink-0" />
-              {property.market}
-            </div>
-            <div className="text-[#303234]/40 truncate" style={{ fontSize: 10 }}>{property.submarket}</div>
-          </div>
-          <div className="min-w-0 text-right">
-            <div className="text-[#303234]/70 truncate" style={{ fontSize: 10.5, fontWeight: 600 }}>
-              {property.locationSignals.highwayAccess}
-            </div>
-            <div className="text-[#303234]/40 truncate" style={{ fontSize: 10 }}>
-              {property.locationSignals.sameDayReach} reach
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Figures */}
-      <div className="flex items-stretch mx-3.5 mt-3 rounded-xl bg-[#F8FBFE] overflow-hidden">
-        {[
-          { v: property.rentPsf ? `$${property.rentPsf}` : '—', l: 'Rent / SF', accent: true },
-          { v: `${Math.round(property.sizeSqft / 1000)}K`, l: 'SF' },
-          { v: `${property.clearHeightFt}'`, l: 'Clear' },
-          { v: `${property.dockDoors}`, l: 'Docks' },
-        ].map(s => (
-          <div key={s.l} className="flex-1 min-w-0 px-2 py-2 text-center border-l border-white first:border-l-0">
-            <div className={s.accent ? 'text-[#00994D]' : 'text-[#0C447C]'} style={{ fontSize: 12, fontWeight: 800 }}>{s.v}</div>
-            <div className="text-[#303234]/40 truncate" style={{ fontSize: 9, fontWeight: 600 }}>{s.l}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Thumbnail, match and actions */}
-      <div className="flex items-center gap-2.5 px-3.5 py-3">
-        <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#E6F1FB] shrink-0">
-          <ImageWithFallback src={property.images[0]} alt={property.name} className="w-full h-full object-cover" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="text-[#0C447C]" style={{ fontSize: 11, fontWeight: 700 }}>{score}% profile match</div>
-          <div className="h-1 mt-1 rounded-full bg-[#E6F1FB] overflow-hidden">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${score}%`, background: score >= 75 ? '#00CC66' : score >= 50 ? '#B26A00' : '#B42318' }}
-            />
-          </div>
-        </div>
-
+        {/* Save heart */}
         <button
           onClick={e => { e.stopPropagation(); toggleSaved(property.id); }}
-          className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
-            isSaved(property.id) ? 'border-[#00C2B2] text-[#00C2B2]' : 'border-[#E6F1FB] text-[#303234]/40 hover:border-[#00C2B2]/40'
-          }`}
-          aria-label={isSaved(property.id) ? 'Remove from saved' : 'Save property'}
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
+          aria-label={saved ? 'Remove from saved' : 'Save property'}
         >
-          <Bookmark size={12} className={isSaved(property.id) ? 'fill-[#00C2B2]' : ''} />
+          <Heart size={15} className={saved ? 'fill-[#6750A4] text-[#6750A4]' : 'text-[#1D1B20]/60'} />
         </button>
-        <button
-          onClick={e => { e.stopPropagation(); toggleCompare(property.id); }}
-          className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
-            isInCompare(property.id) ? 'border-[#00C2B2] bg-[#00C2B2]/10 text-[#1B4D4A]' : 'border-[#E6F1FB] text-[#303234]/40 hover:border-[#00C2B2]/40'
-          }`}
-          aria-label={isInCompare(property.id) ? 'Remove from compare' : 'Add to compare'}
-        >
-          <GitCompareArrows size={12} />
-        </button>
-        <button
-          onClick={e => { e.stopPropagation(); onViewDetails(property.id); }}
-          className="shrink-0 inline-flex items-center gap-1 px-2.5 h-7 rounded-lg bg-[#1B4D4A] text-white hover:bg-[#187770] transition-colors"
-          style={{ fontSize: 10.5, fontWeight: 700 }}
-        >
-          Details <ArrowUpRight size={11} />
-        </button>
+      </div>
+
+      {/* Content */}
+      <div className="px-1.5 pt-3 pb-1.5">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-[#21005D] truncate" style={{ fontSize: 14, fontWeight: 700 }}>{property.name}</h3>
+          <span className="shrink-0 inline-flex items-center gap-0.5 text-[#1D1B20]/80" style={{ fontSize: 12, fontWeight: 600 }}>
+            <Star size={11} className="fill-[#6750A4] text-[#6750A4]" /> {(score / 20).toFixed(1)}
+          </span>
+        </div>
+
+        <div className="text-[#1D1B20]/50 truncate mt-0.5" style={{ fontSize: 12 }}>
+          {property.market}, {property.submarket}
+        </div>
+        <div className="text-[#1D1B20]/50 truncate" style={{ fontSize: 12 }}>
+          {Math.round(property.sizeSqft / 1000)}K SF · {property.clearHeightFt}′ clear · {property.dockDoors} docks
+        </div>
+        <div className="text-[#1D1B20]/50 truncate" style={{ fontSize: 12 }}>
+          Available {availableFrom}
+        </div>
+
+        <div className="flex items-end justify-between gap-2 mt-2">
+          <div className="min-w-0">
+            <span className="text-[#21005D]" style={{ fontSize: 15, fontWeight: 800 }}>
+              {property.rentPsf ? `$${property.rentPsf}` : 'On request'}
+            </span>
+            {property.rentPsf && <span className="text-[#1D1B20]/50" style={{ fontSize: 12, fontWeight: 500 }}> /SF</span>}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={e => { e.stopPropagation(); toggleCompare(property.id); }}
+              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+                isInCompare(property.id) ? 'bg-[#E8DEF8] border-[#6750A4] text-[#21005D]' : 'border-[#CAC4D0] text-[#1D1B20]/45 hover:border-[#6750A4]/50'
+              }`}
+              aria-label={isInCompare(property.id) ? 'Remove from compare' : 'Add to compare'}
+            >
+              <GitCompareArrows size={13} />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onViewDetails(property.id); }}
+              className="inline-flex items-center gap-1 px-3 h-8 rounded-full bg-[#6750A4] text-white hover:bg-[#4F378B] transition-colors"
+              style={{ fontSize: 12, fontWeight: 600 }}
+            >
+              Details <ArrowUpRight size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* Match chip */}
+        <span className="inline-flex items-center px-2.5 py-1 mt-2.5 rounded-full bg-[#E8DEF8] text-[#21005D]" style={{ fontSize: 10.5, fontWeight: 600 }}>
+          {score}% profile match
+        </span>
       </div>
     </div>
   );

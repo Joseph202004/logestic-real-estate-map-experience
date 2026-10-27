@@ -15,9 +15,9 @@ export const categoryDefs: { id: CategoryId; label: string; icon: any; blurb: st
 
 /** Possession dots match the map legend so both read as one vocabulary. */
 export const possessionDefs: { id: PossessionId; label: string; dot: string }[] = [
-  { id: 'available', label: 'Available Now', dot: '#00CC66' },
-  { id: 'under_negotiation', label: 'Under Negotiation', dot: '#B26A00' },
-  { id: 'coming_soon', label: 'Coming Soon', dot: '#0C447C' },
+  { id: 'available', label: 'Available Now', dot: '#2E7D32' },
+  { id: 'under_negotiation', label: 'Under Negotiation', dot: '#8C5000' },
+  { id: 'coming_soon', label: 'Coming Soon', dot: '#21005D' },
 ];
 
 /** The dataset stores raw term lengths ('3 Year', …) plus a btsAvailable flag. */
